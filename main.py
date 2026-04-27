@@ -42,10 +42,20 @@ def main():
     # 외부 Fairy-Stockfish 프로세스와 통신을 담당합니다.
     engine_path = config.ENGINE_PATH
     engine = None
-    
+
+    # 운영체제에 따라 엔진 파일 이름 설정
+    if sys.platform == "win32":
+        config.ENGINE_NAME = "fairy-stockfish-largeboard_x86-64.exe"
+    elif sys.platform == "linux":
+        config.ENGINE_NAME = "fairy-stockfish-largeboard_x86-64"
+    # Mac OS 등 다른 OS에 대한 처리도 추가할 수 있습니다.
+
+    config.ENGINE_PATH = os.path.join(os.path.dirname(__file__), "engine", config.ENGINE_NAME)
+    engine_path = config.ENGINE_PATH # 업데이트된 경로로 다시 설정
+
     if not os.path.exists(engine_path):
         print(f"!!! 경고: 엔진 파일을 찾을 수 없습니다 !!!\n경로: {engine_path}")
-        # 엔진이 없어도 프로그램은 실행되도록 예외 처리를 합니다.
+        # 엔진이 없어도 프로그램은 실행되도록 예외 처리를 합니다。
     else:
         try:
             engine = JanggiEngine()

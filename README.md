@@ -56,6 +56,43 @@ Janggi Analyzer-0.3.1
 
 특정 시점에 사용 불가능한 메뉴나 버튼 비활성화 시키기(눌러도 작동할 수 없게하고 이름도 흐릿하게 만들기)
 
+## Linux 환경 실행 가이드
+
+1.  **Fairy-Stockfish 엔진 다운로드:**
+    -   [Fairy-Stockfish 릴리스 페이지](https://github.com/fairy-stockfish/Fairy-Stockfish/releases)에서 본인 시스템에 맞는 Linux용 실행 파일을 다운로드합니다.
+    -   예: `fairy-stockfish-largeboard_x86-64`
+
+2.  **엔진 파일 배치:**
+    -   다운로드한 엔진 파일을 프로젝트의 `engine/` 디렉토리 아래에 둡니다. (`janggi_project/engine/`)
+    -   파일 이름이 `fairy-stockfish-largeboard_x86-64`와 같이 실행 가능한 형태인지 확인합니다.
+
+3.  **실행 권한 부여:**
+    -   터미널에서 다음 명령어를 실행하여 엔진 파일에 실행 권한을 부여합니다.
+        ```bash
+        chmod +x engine/fairy-stockfish-largeboard_x86-64
+        ```
+        (다운로드한 파일 이름이 다르면 해당 이름으로 변경)
+
+4.  **`config.py` 설정 확인:**
+    -   `config.py` 파일에서 `ENGINE_PATH`가 올바른 엔진 파일 경로를 가리키는지 확인합니다.
+        ```python
+        # config.py
+        ENGINE_NAME = "fairy-stockfish-largeboard_x86-64"
+        ENGINE_PATH = os.path.join(os.path.dirname(__file__), "engine", ENGINE_NAME)
+        ```
+
+5.  **의존성 설치:**
+    -   Python 3가 설치되어 있어야 합니다.
+    -   프로젝트 루트에서 다음 명령어를 실행하여 필요한 라이브러리를 설치합니다.
+        ```bash
+        pip install -r requirements.txt
+        ```
+
+6.  **프로그램 실행:**
+    -   프로젝트 루트 디렉토리에서 다음 명령어로 프로그램을 실행합니다.
+        ```bash
+        python3 main.py
+        ```
 
 
 ## 프로젝트 폴더 구조
@@ -64,7 +101,7 @@ janggi_project/
 ├── main.py
 ├── config.py
 ├── engine/
-│   └── fairy-stockfish-largeboard_x86-64.exe (또는 리눅스용 파일)
+│   └── fairy-stockfish-largeboard_x86-64  (또는 .exe 파일)
 ├── assets/
 │   └── images/
 │   └── sounds/
@@ -77,7 +114,7 @@ janggi_project/
     └── ui/
         ├── __init__.py
         ├── main_window.py
-        ├── canvas.        
+        ├── canvas.py
         ├── side_panel.py
         └── dialogs.py
 ```
