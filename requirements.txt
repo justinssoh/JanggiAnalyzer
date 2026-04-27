@@ -1,0 +1,12 @@
+# GUI 및 기본 도구는 파이썬 내장(tkinter)이므로 적지 않아도 됩니다.
+
+# 1. 사운드 재생 (playsound 사용 시)
+# playsound==1.2.2
+
+# mp3 파일인 경우
+miniaudio==1.61
+
+# 2. 엔진 통신 및 스레딩은 내장(subprocess, threading)이므로 제외
+
+# 3. 만약 나중에 그래프 시각화를 더 정교하게 하고 싶다면 (선택 사항)
+# matplotlib==3.8.0
