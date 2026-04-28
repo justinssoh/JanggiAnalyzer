@@ -2,7 +2,7 @@ Janggi Analyzer-0.3.1
 =====
 한국 전통 장기를 컴퓨터와 둘 수 있고 기보(.pgn)를 저장하고 분석하는 UI 프로그램입니다.
 
-장기 규칙과 분석은 [ fairy-stockfish ](https://fairy-stockfish.github.io/)를 이용합니다.
+장기 규칙과 분석은 [ fairy-stockfish ](https://fairy-stockfish.github.io/) 엔진을 이용합니다.
 
 
 ## TODO
@@ -60,11 +60,11 @@ Janggi Analyzer-0.3.1
 
 1.  **Fairy-Stockfish 엔진 다운로드:**
     -   [Fairy-Stockfish 릴리스 페이지](https://github.com/fairy-stockfish/Fairy-Stockfish/releases)에서 본인 시스템에 맞는 Linux용 실행 파일을 다운로드합니다.
-    -   예: `fairy-stockfish-largeboard_x86-64`
+    -   예: `fairy-stockfish_x86-64`
 
 2.  **엔진 파일 배치:**
-    -   다운로드한 엔진 파일을 프로젝트의 `engine/` 디렉토리 아래에 둡니다. (`janggi_project/engine/`)
-    -   파일 이름이 `fairy-stockfish-largeboard_x86-64`와 같이 실행 가능한 형태인지 확인합니다.
+    -   다운로드한 엔진 파일을 프로젝트의 `engine/` 디렉토리 아래에 둡니다. (`JanggiAnalyzer/engine/`)
+    -   파일 이름이 `fairy-stockfish_x86-64`와 같이 실행 가능한 형태인지 확인합니다.
 
 3.  **실행 권한 부여:**
     -   터미널에서 다음 명령어를 실행하여 엔진 파일에 실행 권한을 부여합니다.
