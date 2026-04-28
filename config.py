@@ -81,7 +81,7 @@ COLOR_HAN = "#cc0000"         # 진한 빨강
 # [5] 엔진 설정 (Engine Settings)
 # =========================================================================
 # 운영체제에 따라 확장자를 자동으로 붙여줍니다. (.exe 등)
-ENGINE_NAME = "fairy-stockfish-largeboard_x86-64"
+ENGINE_NAME = "fairy-stockfish_x86-64"
 if os.name == 'nt': # Windows인 경우
     ENGINE_NAME += ".exe"
 
