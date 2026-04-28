@@ -56,6 +56,8 @@ Janggi Analyzer-0.3.1
 
 특정 시점에 사용 불가능한 메뉴나 버튼 비활성화 시키기(눌러도 작동할 수 없게하고 이름도 흐릿하게 만들기)
 
+
+
 ## Linux 환경 실행 가이드
 
 1.  **Fairy-Stockfish 엔진 다운로드:**
@@ -77,7 +79,7 @@ Janggi Analyzer-0.3.1
     -   `config.py` 파일에서 `ENGINE_PATH`가 올바른 엔진 파일 경로를 가리키는지 확인합니다.
         ```python
         # config.py
-        ENGINE_NAME = "fairy-stockfish-largeboard_x86-64"
+        ENGINE_NAME = "fairy-stockfish_x86-64"
         ENGINE_PATH = os.path.join(os.path.dirname(__file__), "engine", ENGINE_NAME)
         ```
 
@@ -95,13 +97,14 @@ Janggi Analyzer-0.3.1
         ```
 
 
+
 ## 프로젝트 폴더 구조
 ```Plain Text
 janggi_project/
 ├── main.py
 ├── config.py
 ├── engine/
-│   └── fairy-stockfish-largeboard_x86-64  (또는 .exe 파일)
+│   └── fairy-stockfish_x86-64  (또는 .exe 파일)
 ├── assets/
 │   └── images/
 │   └── sounds/
@@ -196,6 +199,7 @@ GameManager에 있는 move_history와 current_step만이 현재 게임의 상태
 
 * config.py의 설정값
     - self.cfg.HEIGHT 처럼 사용
+
 
 
 ## Call Back 함수

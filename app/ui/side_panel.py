@@ -60,27 +60,22 @@ class SidePanel(tk.Frame):
         
         self.cmd_frame.columnconfigure(0, weight=1)
         self.cmd_frame.columnconfigure(1, weight=1)
+        self.cmd_frame.columnconfigure(2, weight=1)
 
         # 버튼 생성 및 GameManager 함수 연결
-        self.btn_new   = tk.Button(self.cmd_frame, text="대국시작", height=2, 
-                                   command=self.manager.request_reset)
-        self.btn_undo  = tk.Button(self.cmd_frame, text="자동대국", height=2,
-                                   command=self._on_undo)
-        self.btn_surrender  = tk.Button(self.cmd_frame, text="기권", height=2,
-                                   command=self._on_surrender)
-        self.btn_start = tk.Button(self.cmd_frame, text="분석시작", bg="#e1f5fe",
-                                   command=self._on_start_analysis)
-        self.btn_stop  = tk.Button(self.cmd_frame, text="중단", bg="#ffebee",
-                                   command=self._on_stop_analysis)
-        self.btn_pass  = tk.Button(self.cmd_frame, text="한수쉼", bg="#36f720",
-                                   command=self._on_pass)
+        self.btn_analysis_start = tk.Button(self.cmd_frame, text="분석 시작", height=2, command=self._on_analysis_start)
+        self.btn_game_start     = tk.Button(self.cmd_frame, text="대국 시작", height=2, command=self._on_game_start)
+        self.btn_auto_game_start = tk.Button(self.cmd_frame, text="자동 대국", height=2, command=self._on_auto_game_start)
+        self.btn_surrender  = tk.Button(self.cmd_frame, text="기권", height=2, command=self._on_surrender) # 기권 버튼 복원
+        self.btn_pass  = tk.Button(self.cmd_frame, text="한수쉼", bg="#36f720",command=self._on_pass) # 한수쉼 버튼 복원
+        self.btn_stop           = tk.Button(self.cmd_frame, text="중단",     height=2, command=self._on_stop)
 
-        self.btn_new.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
-        self.btn_undo.grid(row=0, column=1, sticky="nsew", padx=2, pady=2)
-        self.btn_surrender.grid(row=0, column=2, sticky="nsew", padx=2, pady=2)
-        self.btn_start.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
-        self.btn_stop.grid(row=1, column=1, sticky="nsew", padx=2, pady=2)
-        self.btn_pass.grid(row=1, column=2, sticky="nsew", padx=2, pady=2)
+        self.btn_analysis_start.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+        self.btn_game_start.grid(row=0, column=1, sticky="nsew", padx=2, pady=2)
+        self.btn_auto_game_start.grid(row=0, column=2, sticky="nsew", padx=2, pady=2)
+        self.btn_surrender.grid(row=1, column=0, sticky="nsew", padx=2, pady=2) # 기권 버튼 그리드 위치
+        self.btn_pass.grid(row=1, column=1, sticky="nsew", padx=2, pady=2) # 한수쉼 버튼 그리드 위치
+        self.btn_stop.grid(row=1, column=2, sticky="nsew", padx=2, pady=2)
 
     # --- 3.5층: 수순 네비게이션 ( <<  <  15/42  >  >> ) ---
     def _create_layer_3_5_navigation(self):
@@ -129,18 +124,21 @@ class SidePanel(tk.Frame):
         self.txt_analysis.pack(fill="both", expand=True)
 
     # --- 내부 이벤트 핸들러 (Manager와 연결) ---
-    def _on_undo(self):
-        print("SidePanel: 무르기 요청")
-        # self.manager.undo_move() # GameManager에 구현 필요
-
-    def _on_start_analysis(self):
+    def _on_analysis_start(self):
+        print("SidePanel: 분석 모드 시작 요청")
         self.lbl_status.config(text="● Analyzing", fg="orange")
-        # self.manager.start_analysis() # GameManager에 구현 필요
+        self.manager.start_analysis_mode()
 
-    def _on_stop_analysis(self):
-        self.lbl_status.config(text="● Ready", fg="green")
-        # self.manager.stop_analysis() # GameManager에 구현 필요
-    
+    def _on_game_start(self):
+        print("SidePanel: 대국 모드 시작 요청")
+        self.lbl_status.config(text="● Playing", fg="blue")
+        self.manager.start_game_mode()
+
+    def _on_auto_game_start(self):
+        print("SidePanel: 자동 대국 모드 시작 요청")
+        self.lbl_status.config(text="● Auto Play", fg="purple")
+        self.manager.start_auto_game_mode()
+
     def _on_surrender(self):
         print("SidePanel: 기권 요청")
         # self.manager.surrender() # GameManager에 구현 필요
@@ -148,6 +146,11 @@ class SidePanel(tk.Frame):
     def _on_pass(self):
         """한수쉼 실행"""
         self.manager.pass_turn()
+
+    def _on_stop(self):
+        print("SidePanel: 중단 요청")
+        self.lbl_status.config(text="● Ready", fg="green")
+        self.manager.stop_current_mode()
     
     def reset_history(self):
         """기보창을 초기 FEN 헤더 상태로 리셋"""

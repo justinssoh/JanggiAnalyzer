@@ -48,6 +48,11 @@ class GameManager:
         self.is_game_over = False
         self.selected_pos = None                    # UI에서 선택된 칸 (row, col)
         self.board_states = [self._copy_board()]    # 각 수순의 보드 상태 저장 (초기 상태)
+        
+        self.current_mode = "idle" # "idle", "analysis", "game", "auto_game"
+        self.engine_process = None # 엔진 프로세스 객체
+        self.engine_analysis_thread = None # 분석용 스레드
+        self.engine_game_thread = None # 대국용 스레드
 
         print("GameManager: 게임이 초기화되었습니다.")
 
@@ -55,8 +60,45 @@ class GameManager:
         """MainWindow의 화면 갱신 함수를 연결합니다."""
         self.ui_refresh_callback = callback
 
+    # --- UI 버튼과 연결될 메서드들 ---
+    def start_analysis_mode(self):
+        self.stop_current_mode()
+        self.current_mode = "analysis"
+        self.initialize_game()
+        # 여기에 분석 모드 시작 로직 (예: 엔진 분석 스레드 시작) 추가
+        print("GameManager: 분석 모드 시작")
+        self._refresh_ui()
+
+    def start_game_mode(self):
+        self.stop_current_mode()
+        self.current_mode = "game"
+        self.initialize_game()
+        # 여기에 대국 모드 시작 로직 추가
+        print("GameManager: 대국 모드 시작")
+        self._refresh_ui()
+
+    def start_auto_game_mode(self):
+        self.stop_current_mode()
+        self.current_mode = "auto_game"
+        self.initialize_game()
+        # 여기에 자동 대국 모드 시작 로직 추가
+        print("GameManager: 자동 대국 모드 시작")
+        self._refresh_ui()
+
+    def stop_current_mode(self):
+        if self.current_mode != "idle":
+            print(f"GameManager: {self.current_mode} 모드 중단")
+            # 모든 실행 중인 엔진 작업 중단 로직 추가
+            # if self.engine_analysis_thread and self.engine_analysis_thread.is_alive():
+            #    self.engine_analysis_thread.stop()
+            # if self.engine_game_thread and self.engine_game_thread.is_alive():
+            #    self.engine_game_thread.stop()
+            self.current_mode = "idle"
+            self._refresh_ui()
+
     def request_reset(self):
         """사용자가 UI에서 리셋을 요청했을 때 호출됩니다."""
+        self.stop_current_mode() # 기존 모드 중단
         self.initialize_game()
         self._refresh_ui()
 
