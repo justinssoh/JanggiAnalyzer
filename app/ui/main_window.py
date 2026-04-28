@@ -69,6 +69,9 @@ class JanggiApp:
             self.game_manager
         )
         self.side_panel.pack(side="right", fill="y", padx=(10, 0))
+        
+        # GameManager에서 SidePanel에 접근할 수 있도록 연결
+        self.game_manager.side_panel = self.side_panel
 
     print("UI: 화면 갱신 완료")
     

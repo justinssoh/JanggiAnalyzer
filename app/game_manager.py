@@ -64,10 +64,70 @@ class GameManager:
     def start_analysis_mode(self):
         self.stop_current_mode()
         self.current_mode = "analysis"
-        self.initialize_game()
-        # 여기에 분석 모드 시작 로직 (예: 엔진 분석 스레드 시작) 추가
         print("GameManager: 분석 모드 시작")
         self._refresh_ui()
+        self._run_analysis_cycle()
+
+    def _run_analysis_cycle(self):
+        """현재 포지션에 대해 분석을 한 번 수행합니다."""
+        if self.current_mode != "analysis" or not self.engine:
+            return
+
+        # 현재 보드의 FEN 생성
+        fen = self.model.generate_fen()
+        
+        # 엔진 분석 요청
+        self.engine.analyze_position(fen, self._on_analysis_result)
+
+    def _on_analysis_result(self, data, is_info=False):
+        """엔진 분석 결과가 도착했을 때 호출되는 콜백"""
+        if self.current_mode != "analysis":
+            return
+
+        if is_info:
+            # 실시간 분석 정보 (depth, score 등)
+            if " pv " in data:
+                # PV(Principal Variation)가 포함된 경우만 표시
+                parts = data.split(" pv ")
+                info_part = parts[0]
+                pv_part = parts[1].split()[0] # 첫 번째 수만 추출
+                
+                # 점수 추출 시도
+                score = ""
+                score_match = re.search(r"score (cp|mate) (-?\d+)", info_part)
+                if score_match:
+                    score = f"[{score_match.group(1)} {score_match.group(2)}]"
+                
+                from app.utils import CoordMapper
+                try:
+                    display_pv = CoordMapper.uci_to_pgn(pv_part)
+                except:
+                    display_pv = pv_part
+                
+                msg = f"Analyzing... {score} Best: {display_pv}"
+                if hasattr(self, "side_panel"):
+                    # 기존 텍스트를 덮어씌우거나 마지막 줄을 수정하는 기능이 없으므로 일단 로그로 남김
+                    # 실시간으로 너무 많이 찍히면 복잡하므로 특정 주기나 depth마다 찍는 것이 좋음
+                    if "depth 10" in info_part or "depth 15" in info_part:
+                        self.side_panel.log_analysis(msg)
+            return
+
+        # 최종 베스트 무브
+        best_move = data
+        from app.utils import CoordMapper
+        try:
+            display_move = CoordMapper.uci_to_pgn(best_move)
+        except:
+            display_move = best_move
+
+        msg = f"★ Final Best Move: {display_move} ({best_move})"
+        
+        if hasattr(self, "side_panel"):
+            self.side_panel.log_analysis(msg)
+            self.side_panel.log_analysis("-" * 30)
+        
+        # 반복 분석을 위해 다시 실행 (필요 시)
+        # self._run_analysis_cycle()
 
     def start_game_mode(self):
         self.stop_current_mode()
@@ -88,11 +148,8 @@ class GameManager:
     def stop_current_mode(self):
         if self.current_mode != "idle":
             print(f"GameManager: {self.current_mode} 모드 중단")
-            # 모든 실행 중인 엔진 작업 중단 로직 추가
-            # if self.engine_analysis_thread and self.engine_analysis_thread.is_alive():
-            #    self.engine_analysis_thread.stop()
-            # if self.engine_game_thread and self.engine_game_thread.is_alive():
-            #    self.engine_game_thread.stop()
+            if self.engine:
+                self.engine.stop_analysis()
             self.current_mode = "idle"
             self._refresh_ui()
 

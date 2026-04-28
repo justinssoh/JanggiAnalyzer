@@ -45,9 +45,9 @@ def main():
 
     # 운영체제에 따라 엔진 파일 이름 설정
     if sys.platform == "win32":
-        config.ENGINE_NAME = "fairy-stockfish-largeboard_x86-64.exe"
+        config.ENGINE_NAME = "fairy-stockfish_x86-64.exe"
     elif sys.platform == "linux":
-        config.ENGINE_NAME = "fairy-stockfish-largeboard_x86-64"
+        config.ENGINE_NAME = "fairy-stockfish_x86-64"
     # Mac OS 등 다른 OS에 대한 처리도 추가할 수 있습니다.
 
     config.ENGINE_PATH = os.path.join(os.path.dirname(__file__), "engine", config.ENGINE_NAME)

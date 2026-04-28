@@ -105,10 +105,17 @@ class JanggiEngine:
 
         best_move = None
         while True:
+            if not self.process:
+                break
             line = self.process.stdout.readline().strip()
             if not line:
-                break
+                continue # 프로세스가 살아있으면 계속 읽기 시도
             
+            # 실시간 분석 정보를 보려면 info 라인을 파싱할 수 있음
+            # 예: info depth 10 seldepth 12 score cp 15 nodes 12345 nps 1000 pv e10e9 ...
+            if callback and line.startswith("info"):
+                callback(line, is_info=True)
+
             # 엔진 응답 예: "bestmove e10e9 ponder d1e1"
             if line.startswith("bestmove"):
                 parts = line.split()
@@ -118,4 +125,4 @@ class JanggiEngine:
         
         # 3. 분석 결과를 메인 쓰레드(UI)로 돌려보냄
         if callback and best_move:
-            callback(best_move)
+            callback(best_move, is_info=False)
