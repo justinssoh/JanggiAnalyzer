@@ -19,3 +19,6 @@ lib64/
 .idea/
 .DS_Store
 Thumbs.db
+
+# --- AI 관련 ---
+.clineignore

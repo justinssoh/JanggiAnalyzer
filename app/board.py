@@ -137,10 +137,11 @@ class JanggiBoardModel:
         self.move_piece(row1, c1, row2, c2)
         return True
 
-    def generate_fen(self):
+    def generate_fen(self, turn='w'):
         """
         현재 grid 상태를 다시 FEN 문자열로 변환합니다.
         (엔진에게 현재 상황을 전달할 때 사용됩니다.)
+        :param turn: 현재 차례 ('w' 또는 'b')
         """
         fen_rows = []
         for r in range(config.ROWS):
@@ -159,4 +160,6 @@ class JanggiBoardModel:
                 row_str += str(empty_count)
             fen_rows.append(row_str)
         
-        return "/".join(fen_rows)
+        pieces_fen = "/".join(fen_rows)
+        # 장기 FEN: [기물배치] [차례] [기타옵션(보통 - - 0 1)]
+        return f"{pieces_fen} {turn} - - 0 1"

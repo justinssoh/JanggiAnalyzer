@@ -73,8 +73,8 @@ class GameManager:
         if self.current_mode != "analysis" or not self.engine:
             return
 
-        # 현재 보드의 FEN 생성
-        fen = self.model.generate_fen()
+        # 현재 보드의 FEN 생성 (현재 턴 정보 포함)
+        fen = self.model.generate_fen(self.current_turn)
         
         # 엔진 분석 요청
         self.engine.analyze_position(fen, self._on_analysis_result)
@@ -126,13 +126,13 @@ class GameManager:
             self.side_panel.log_analysis(msg)
             self.side_panel.log_analysis("-" * 30)
         
-        # 반복 분석을 위해 다시 실행 (필요 시)
+        # 반복 분석을 위해 다시 실행
         # self._run_analysis_cycle()
 
     def start_game_mode(self):
         self.stop_current_mode()
         self.current_mode = "game"
-        self.initialize_game()
+        
         # 여기에 대국 모드 시작 로직 추가
         print("GameManager: 대국 모드 시작")
         self._refresh_ui()
@@ -186,9 +186,17 @@ class GameManager:
                 self.selected_pos = None
             else:
                 # 여기에 장기 규칙 검증(Rule Check) 로직이 들어갈 자리입니다.
-                # 일단은 모든 이동을 허용하는 코드로 작성합니다.
+                # 예: if self.is_valid_move(prev_row, prev_col, row, col):
+                
+                # UCI 형식으로 변환 (엔진 통신 및 기보 저장용)
                 move_uci = self._coords_to_uci(prev_row, prev_col, row, col)
+                
+                # 기물 이동 적용
                 self.execute_move(move_uci, prev_row, prev_col, row, col)
+                
+                # 이동 후 분석 모드라면 분석 갱신
+                if self.current_mode == "analysis":
+                    self._run_analysis_cycle()
             
             self.selected_pos = None
             self._refresh_ui()
@@ -199,26 +207,32 @@ class GameManager:
 
     def execute_move(self, move_uci, r1, c1, r2, c2):
         """실제로 기물을 옮기고 다음 상태로 전환합니다."""
-        # 모델 업데이트
-        moving_piece = self.model.grid[r1][c1]
-        self.model.grid[r2][c2] = moving_piece
-        self.model.grid[r1][c1] = '.'
+        # 1. 모델 데이터 업데이트 (실제 이동 처리)
+        self.model.move_piece(r1, c1, r2, c2)
         
-        # 기보 추가 (표시용 좌표로 변환하여 저장)
+        # 2. 기보(Move History) 기록
+        # uci_to_display는 e10e9 -> 5958 또는 PGN 형식 등 UI용 문자열로 변환
         from app.utils import PGNManager
         display_move = PGNManager.uci_to_display(move_uci)
+        
+        # 현재 수순 이후의 기록이 있다면 (복기 중 이동 시) 잘라내기 (새로운 분기)
+        if self.current_step < len(self.move_history):
+            self.move_history = self.move_history[:self.current_step]
+            self.board_states = self.board_states[:self.current_step + 1]
+
         self.move_history.append(display_move)
         
-        # 현재 수순 업데이트 (항상 마지막 수순을 가리킴)
+        # 3. 현재 수순 및 보드 상태 저장
         self.current_step = len(self.move_history)
-        
-        # 보드 상태 저장
         self.board_states.append(self._copy_board())
         
-        # 턴 교체
+        # 4. 현재 FEN 업데이트 (엔진용)
+        self.current_fen = self.model.generate_fen()
+        
+        # 5. 턴 교체
         self.current_turn = 'b' if self.current_turn == 'w' else 'w'
         
-        print(f"Move Executed: {move_uci} | Next Turn: {self.current_turn}")
+        print(f"GameManager: Move Executed - {move_uci} (Step: {self.current_step})")
 
     def pass_turn(self):
         """한수쉼을 실행합니다."""
@@ -236,6 +250,10 @@ class GameManager:
         
         print(f"Pass Turn: @@@@ | Next Turn: {self.current_turn}")
         
+        # 한수쉼 후 분석 모드라면 분석 갱신
+        if self.current_mode == "analysis":
+            self._run_analysis_cycle()
+            
         # UI 갱신
         self._refresh_ui()
 
