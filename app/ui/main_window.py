@@ -115,6 +115,7 @@ class JanggiApp:
     def on_closing(self):
         """프로그램 종료 시 엔진 프로세스를 안전하게 닫습니다."""
         if messagebox.askokcancel("종료", "프로그램을 종료하시겠습니까?"):
+            self.game_manager.stop_current_mode()
             if self.game_manager.engine:
                 self.game_manager.engine.quit_engine()
             self.root.destroy()

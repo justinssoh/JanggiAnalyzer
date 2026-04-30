@@ -70,11 +70,18 @@ class JanggiEngine:
 
     def quit_engine(self):
         """엔진 프로세스를 완전히 종료합니다."""
+        self.is_ready = False
         if self.process:
-            self.send_command("quit")
-            self.process.terminate()
-            self.process = None
-            self.is_ready = False
+            try:
+                self.send_command("stop")
+                self.send_command("quit")
+                self.process.stdin.close()
+                self.process.wait(timeout=2)
+            except Exception:
+                pass
+            finally:
+                self.process.kill()
+                self.process = None
 
     # ---------------------------------------------------------------------
     # 분석 로직 (비동기 실행 권장)
@@ -105,11 +112,11 @@ class JanggiEngine:
 
         best_move = None
         while True:
-            if not self.process:
+            if not self.process or not self.is_ready:
                 break
             line = self.process.stdout.readline().strip()
-            if not line:
-                continue # 프로세스가 살아있으면 계속 읽기 시도
+            if not line:  # 프로세스 종료 시 빈 문자열 반환 → 루프 탈출
+                break
             
             # 실시간 분석 정보를 보려면 info 라인을 파싱할 수 있음
             # 예: info depth 10 seldepth 12 score cp 15 nodes 12345 nps 1000 pv e10e9 ...
