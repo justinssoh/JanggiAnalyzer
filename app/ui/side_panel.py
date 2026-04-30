@@ -145,6 +145,9 @@ class SidePanel(tk.Frame):
 
     def _on_pass(self):
         """한수쉼 실행"""
+        # 대국 모드에서 플레이어 턴이 아니면 무시
+        if self.manager.current_mode == "game" and self.manager.current_turn != self.manager.player_side:
+            return
         self.manager.pass_turn()
 
     def _on_stop(self):

@@ -298,11 +298,11 @@ class GameManager:
         
         print(f"Pass Turn: @@@@ | Next Turn: {self.current_turn}")
         
-        # 한수쉼 후 분석 모드라면 분석 갱신
         if self.current_mode == "analysis":
             self._run_analysis_cycle()
+        elif self.current_mode == "game" and self.current_turn != self.player_side:
+            self._engine_move()
             
-        # UI 갱신
         self._refresh_ui()
 
     # ---------------------------------------------------------------------
