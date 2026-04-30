@@ -5,28 +5,17 @@ import config
 
 class JanggiEngine:
     def __init__(self):
-        """
-        장기 엔진(Fairy-Stockfish) 제어 객체 초기화.
-        """
         self.process = None
         self.is_ready = False
-        
-        # 엔진 실행 파일 경로 확인
+        self._lock = threading.Lock()  # 동시 분석 방지
         self.path = config.ENGINE_PATH
-        
-        # 엔진 연결 시작
         self.connect()
 
     def connect(self):
-        """엔진 프로세스를 실행하고 초기 UCI 설정을 수행합니다."""
         if not os.path.exists(self.path):
             print(f"Engine Error: 파일을 찾을 수 없습니다 -> {self.path}")
             return
-
         try:
-            # 1. 서브프로세스로 엔진 실행
-            # universal_newlines=True: 텍스트 모드로 통신
-            # bufsize=1: 라인 단위 버퍼링
             self.process = subprocess.Popen(
                 self.path,
                 stdin=subprocess.PIPE,
@@ -35,41 +24,41 @@ class JanggiEngine:
                 universal_newlines=True,
                 bufsize=1
             )
-
-            # 2. UCI 초기화 명령어 전송
             self.send_command("uci")
             self.send_command("setoption name UCI_Variant value janggi")
             self.send_command("isready")
-            
-            # 엔진의 응답을 확인하는 별도 쓰레드 시작 (선택 사항)
-            # 여기서는 간단하게 초기 연결 성공만 확인합니다.
+            # readyok 응답 대기
+            while True:
+                line = self.process.stdout.readline().strip()
+                if line == "readyok":
+                    break
             self.is_ready = True
             print(f"Engine: 연결 성공 ({config.ENGINE_NAME})")
-
         except Exception as e:
             print(f"Engine Connection Failed: {e}")
             self.is_ready = False
 
     def send_command(self, command):
-        """엔진에 명령어를 전송합니다."""
         if self.process and self.process.stdin:
             self.process.stdin.write(f"{command}\n")
             self.process.stdin.flush()
 
     def reset_engine(self):
-        """엔진의 상태를 새 게임 상태로 리셋합니다."""
         if self.is_ready:
             self.send_command("ucinewgame")
             self.send_command("isready")
+            # readyok 대기
+            while True:
+                line = self.process.stdout.readline().strip()
+                if line == "readyok":
+                    break
             print("Engine: 상태 리셋 완료")
 
     def stop_analysis(self):
-        """현재 진행 중인 분석을 중단합니다."""
         if self.is_ready:
             self.send_command("stop")
 
     def quit_engine(self):
-        """엔진 프로세스를 완전히 종료합니다."""
         self.is_ready = False
         if self.process:
             try:
@@ -83,16 +72,16 @@ class JanggiEngine:
                 self.process.kill()
                 self.process = None
 
-    # ---------------------------------------------------------------------
-    # 분석 로직 (비동기 실행 권장)
-    # ---------------------------------------------------------------------
     def analyze_position(self, fen, moves, callback):
         """
         :param fen: 초기 FEN 문자열
-        :param moves: UCI 수순 리스트 (빈 리스트면 현재 FEN만 사용)
+        :param moves: UCI 수순 리스트
         :param callback: 분석 완료 후 결과를 전달받을 함수
         """
         if not self.is_ready:
+            return
+        # 이미 분석 중이면 새 스레드 시작 안 함
+        if self._lock.locked():
             return
         thread = threading.Thread(
             target=self._run_analysis_thread,
@@ -102,34 +91,27 @@ class JanggiEngine:
         thread.start()
 
     def _run_analysis_thread(self, fen, moves, callback):
-        """별도 쓰레드에서 엔진 분석 결과를 기다리는 로직"""
-        # 초기 FEN + 수순 전달 (엔진이 전체 맥락을 파악하도록)
-        if moves:
-            self.send_command(f"position fen {fen} moves {' '.join(moves)}")
-        else:
-            self.send_command(f"position fen {fen}")
-        self.send_command(f"go movetime {config.MOVETIME}")
+        with self._lock:
+            if moves:
+                self.send_command(f"position fen {fen} moves {' '.join(moves)}")
+            else:
+                self.send_command(f"position fen {fen}")
+            self.send_command(f"go movetime {config.MOVETIME}")
 
-        best_move = None
-        while True:
-            if not self.process or not self.is_ready:
-                break
-            line = self.process.stdout.readline().strip()
-            if not line:  # 프로세스 종료 시 빈 문자열 반환 → 루프 탈출
-                break
-            
-            # 실시간 분석 정보를 보려면 info 라인을 파싱할 수 있음
-            # 예: info depth 10 seldepth 12 score cp 15 nodes 12345 nps 1000 pv e10e9 ...
-            if callback and line.startswith("info"):
-                callback(line, is_info=True)
+            best_move = None
+            while True:
+                if not self.process or not self.is_ready:
+                    break
+                line = self.process.stdout.readline().strip()
+                if not line:
+                    break
+                if callback and line.startswith("info"):
+                    callback(line, is_info=True)
+                if line.startswith("bestmove"):
+                    parts = line.split()
+                    if len(parts) >= 2 and parts[1] != "(none)":
+                        best_move = parts[1]
+                    break
 
-            # 엔진 응답 예: "bestmove e10e9 ponder d1e1"
-            if line.startswith("bestmove"):
-                parts = line.split()
-                if len(parts) >= 2:
-                    best_move = parts[1]
-                break
-        
-        # 3. 분석 결과를 메인 쓰레드(UI)로 돌려보냄
         if callback and best_move:
             callback(best_move, is_info=False)
