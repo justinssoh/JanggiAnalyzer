@@ -161,15 +161,25 @@ class GameManager:
         self._refresh_ui()
         self._auto_game_step()
 
+    def _log_engine_move(self, uci_move):
+        """분석창에 엔진이 선택한 수를 출력합니다."""
+        if not hasattr(self, 'side_panel'):
+            return
+        from app.utils import CoordMapper
+        try:
+            display = CoordMapper.uci_to_pgn(uci_move)
+        except:
+            display = uci_move
+        turn_label = '초' if self.current_turn == 'w' else '한'
+        self.side_panel.log_analysis(f"[{turn_label}] ★ {display}")
+
     def _auto_game_step(self):
-        """uc5d4uc9c4uc774 ud55cuc218uc529 ub450uace0 ub2e4uc74c uc218ub97c uc608uc57dud569ub2c8ub2e4."""
         if self.current_mode != "auto_game" or not self.engine or not self.engine.is_ready:
             return
         fen = self.model.generate_fen(self.current_turn)
         self.engine.analyze_position(fen, self._on_auto_game_result)
 
     def _on_auto_game_result(self, data, is_info=False):
-        """uc5d4uc9c4 bestmoveub97c ubc1buace0 ub51cub808uc774 ud6c4 ub2e4uc74c uc218ub97c uc2e4ud589ud569ub2c8ub2e4."""
         if self.current_mode != "auto_game" or is_info:
             return
         best_move = data
@@ -184,9 +194,9 @@ class GameManager:
         def _do_move():
             if self.current_mode != "auto_game":
                 return
+            self._log_engine_move(best_move)
             self.execute_move(best_move, row1, c1, row2, c2)
             self._refresh_ui()
-            # ub2e4uc74c uc218ub97c ub51cub808uc774 ud6c4 uc608uc57d
             if hasattr(self, '_root'):
                 self._root.after(self.cfg.AUTO_GAME_DELAY, self._auto_game_step)
 
@@ -309,9 +319,12 @@ class GameManager:
         f1, r1, f2, r2 = parsed
         c1, c2 = ord(f1) - ord('a'), ord(f2) - ord('a')
         row1, row2 = 10 - r1, 10 - r2
-        # UI 스레드에서 실행되도록 after() 사용
+        def _do_move():
+            self._log_engine_move(best_move)
+            self.execute_move(best_move, row1, c1, row2, c2)
+            self._refresh_ui()
         if hasattr(self, '_root'):
-            self._root.after(0, lambda: self.execute_move(best_move, row1, c1, row2, c2) or self._refresh_ui())
+            self._root.after(0, _do_move)
 
     def pass_turn(self):
         """한수쉼을 실행합니다."""
