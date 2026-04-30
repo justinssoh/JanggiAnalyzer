@@ -91,3 +91,4 @@ ENGINE_PATH = os.path.join(ENGINE_DIR, ENGINE_NAME)
 MOVETIME = 1000      # 수당 엔진 사고 시간 (밀리초)
 THREADS = 2          # 엔진 사용 스레드 수
 HASH_SIZE = 128      # 엔진 해시 메모리 (MB)
+AUTO_GAME_DELAY = 500  # 자동 대국 수 사이 딜레이 (밀리초)
