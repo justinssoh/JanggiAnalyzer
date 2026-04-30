@@ -129,13 +129,30 @@ class GameManager:
         # 반복 분석을 위해 다시 실행
         # self._run_analysis_cycle()
 
+    def _detect_player_side(self):
+        """
+        보드에서 궁(초=K, 한=k)의 행 위치를 비교하여 플레이어 사이드를 판별합니다.
+        아래쪽(높은 row 번호)에 있는 궁의 진영이 사용자 진영입니다.
+        """
+        K_row = k_row = -1
+        for r in range(self.cfg.ROWS):
+            for c in range(self.cfg.COLS):
+                if self.model.grid[r][c] == 'K': K_row = r
+                if self.model.grid[r][c] == 'k': k_row = r
+        # 더 아래쪽(큰 row)에 있는 궁이 사용자
+        if K_row > k_row: return 'w'
+        if k_row > K_row: return 'b'
+        return 'w'
+
     def start_game_mode(self):
         self.stop_current_mode()
         self.current_mode = "game"
-        
-        # 여기에 대국 모드 시작 로직 추가
-        print("GameManager: 대국 모드 시작")
+        self.player_side = self._detect_player_side()
+        print(f"GameManager: 대국 모드 시작 (플레이어: {'초' if self.player_side == 'w' else '한'})")
         self._refresh_ui()
+        # 엔진이 먼저 둬야 하는 경우 (사용자가 한, 현재 턴이 초)
+        if self.current_turn != self.player_side:
+            self._engine_move()
 
     def start_auto_game_mode(self):
         self.stop_current_mode()
@@ -167,6 +184,10 @@ class GameManager:
         Canvas에서 마우스 클릭 시 호출되는 핵심 로직.
         """
         if self.is_game_over:
+            return
+        
+        # 대국 모드: 플레이어 턴이 아니면 클릭 무시
+        if self.current_mode == "game" and self.current_turn != self.player_side:
             return
 
         piece = self.model.grid[row][col]
@@ -233,6 +254,33 @@ class GameManager:
         self.current_turn = 'b' if self.current_turn == 'w' else 'w'
         
         print(f"GameManager: Move Executed - {move_uci} (Step: {self.current_step})")
+        
+        # 6. 대국 모드: 엔진 차례면 자동으로 엔진 수 실행
+        if self.current_mode == "game" and self.current_turn != self.player_side:
+            self._engine_move()
+
+    def _engine_move(self):
+        """엔진이 현재 포지션을 분석하여 수를 둡니다."""
+        if not self.engine or not self.engine.is_ready:
+            return
+        fen = self.model.generate_fen(self.current_turn)
+        self.engine.analyze_position(fen, self._on_engine_move_result)
+
+    def _on_engine_move_result(self, data, is_info=False):
+        """엔진의 bestmove를 받아 실제로 수를 실행합니다."""
+        if self.current_mode != "game" or is_info:
+            return
+        best_move = data
+        from app.utils import CoordMapper
+        parsed = CoordMapper.parse_uci(best_move)
+        if not parsed:
+            return
+        f1, r1, f2, r2 = parsed
+        c1, c2 = ord(f1) - ord('a'), ord(f2) - ord('a')
+        row1, row2 = 10 - r1, 10 - r2
+        # UI 스레드에서 실행되도록 after() 사용
+        if hasattr(self, '_root'):
+            self._root.after(0, lambda: self.execute_move(best_move, row1, c1, row2, c2) or self._refresh_ui())
 
     def pass_turn(self):
         """한수쉼을 실행합니다."""

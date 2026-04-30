@@ -32,6 +32,7 @@ class JanggiApp:
         
         # 4. 종료 프로토콜 설정 (엔진 프로세스 정리)
         self.game_manager.set_ui_callback(self.refresh_ui)
+        self.game_manager._root = root
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def _setup_ui(self):
