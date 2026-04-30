@@ -34,6 +34,9 @@ class JanggiApp:
         self.game_manager.set_ui_callback(self.refresh_ui)
         self.game_manager._root = root
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        # 5. 엔진 결과 큐 폴링 시작
+        self._poll_engine()
 
     def _setup_ui(self):
         """좌우 배치를 담당하는 메인 프레임 설정"""
@@ -111,6 +114,12 @@ class JanggiApp:
             lbl = tk.Label(cell_container, text=chr(ord('a')+i), 
                         font=("Consolas", 11, "bold"), bg="#ffffff", fg="#555555")
             lbl.place(relx=0.5, rely=0.5, anchor="center") # 컨테이너의 정중앙
+
+    def _poll_engine(self):
+        """100ms마다 엔진 결과 큐를 확인하여 콜백을 실행합니다."""
+        if self.game_manager.engine:
+            self.game_manager.engine.poll_results()
+        self.root.after(100, self._poll_engine)
 
     def on_closing(self):
         """프로그램 종료 시 엔진 프로세스를 안전하게 닫습니다."""

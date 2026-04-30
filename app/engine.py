@@ -1,5 +1,6 @@
 import subprocess
 import threading
+import queue
 import os
 import config
 
@@ -8,7 +9,8 @@ class JanggiEngine:
     def __init__(self):
         self.process = None
         self.is_ready = False
-        self._lock = threading.Lock()   # 한 번에 하나의 분석만 허용
+        self._lock = threading.Lock()       # 한 번에 하나의 분석만 허용
+        self._result_queue = queue.Queue()  # 분석 결과를 메인 스레드로 전달
         self.path = config.ENGINE_PATH
         self.connect()
 
@@ -25,7 +27,6 @@ class JanggiEngine:
                 universal_newlines=True,
                 bufsize=1
             )
-            # uci 초기화 후 readyok까지 모든 출력을 읽어서 버림
             self._send("uci")
             self._send("setoption name UCI_Variant value janggi")
             self._send("isready")
@@ -37,7 +38,6 @@ class JanggiEngine:
             self.is_ready = False
 
     def _send(self, command):
-        """엔진에 명령어를 전송합니다."""
         if self.process and self.process.stdin:
             self.process.stdin.write(f"{command}\n")
             self.process.stdin.flush()
@@ -53,10 +53,8 @@ class JanggiEngine:
         return False
 
     def reset_engine(self):
-        """엔진 상태를 새 게임으로 리셋합니다. 블로킹 없이 명령만 전송합니다."""
         if self.is_ready:
             self._send("ucinewgame")
-            # isready/readyok는 분석 스레드 내부에서 처리하므로 여기선 보내지 않음
             print("Engine: 리셋 명령 전송")
 
     def stop_analysis(self):
@@ -79,13 +77,13 @@ class JanggiEngine:
 
     def analyze_position(self, fen, moves, callback):
         """
-        :param fen:      초기 FEN 문자열
+        분석 요청. 결과는 큐를 통해 메인 스레드로 전달됩니다.
+        :param fen:      초기 FEN (항상 표준 방향: 한 위, 초 아래)
         :param moves:    UCI 수순 리스트
-        :param callback: 결과를 전달받을 함수 (bestmove, is_info)
+        :param callback: (data, is_info) 형태로 호출될 함수
         """
         if not self.is_ready:
             return
-        # 이미 분석 중이면 새 요청 무시
         if self._lock.locked():
             return
         thread = threading.Thread(
@@ -100,7 +98,6 @@ class JanggiEngine:
             if not self.process or not self.is_ready:
                 return
 
-            # isready/readyok로 엔진 준비 확인 후 분석 시작
             self._send("isready")
             if not self._drain_until("readyok"):
                 return
@@ -118,13 +115,26 @@ class JanggiEngine:
                 line = self.process.stdout.readline().strip()
                 if not line:
                     break
-                if callback and line.startswith("info"):
-                    callback(line, is_info=True)
+                if line.startswith("info"):
+                    self._result_queue.put((callback, line, True))
                 if line.startswith("bestmove"):
                     parts = line.split()
                     if len(parts) >= 2 and parts[1] != "(none)":
                         best_move = parts[1]
                     break
 
-        if callback and best_move:
-            callback(best_move, is_info=False)
+        if best_move:
+            self._result_queue.put((callback, best_move, False))
+
+    def poll_results(self):
+        """
+        메인 스레드에서 주기적으로 호출하여 큐에 쌓인 결과를 처리합니다.
+        Tkinter의 after()와 함께 사용합니다.
+        """
+        try:
+            while True:
+                callback, data, is_info = self._result_queue.get_nowait()
+                if callback:
+                    callback(data, is_info=is_info)
+        except queue.Empty:
+            pass

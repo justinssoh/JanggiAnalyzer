@@ -49,10 +49,11 @@ class GameManager:
         self.selected_pos = None                    # UI에서 선택된 칸 (row, col)
         self.board_states = [self._copy_board()]    # 각 수순의 보드 상태 저장 (초기 상태)
         
-        self.current_mode = "idle" # "idle", "analysis", "game", "auto_game"
-        self.engine_process = None # 엔진 프로세스 객체
-        self.engine_analysis_thread = None # 분석용 스레드
-        self.engine_game_thread = None # 대국용 스레드
+        self.current_mode = "idle"
+        self.engine_process = None
+        self.engine_analysis_thread = None
+        self.engine_game_thread = None
+        self.is_flipped = False  # 한이 아래쪽이면 True
 
         print("GameManager: 게임이 초기화되었습니다.")
 
@@ -68,6 +69,26 @@ class GameManager:
         self._refresh_ui()
         self._run_analysis_cycle()
 
+    def _get_engine_fen_and_moves(self):
+        """
+        엔진에 전달할 FEN과 수순을 반환합니다.
+        is_flipped이면 FEN과 수순을 표준 방향으로 변환합니다.
+        """
+        from app.utils import FENSetter
+        fen = self.cfg.INITIAL_FEN
+        moves = self._get_uci_moves()
+        if self.is_flipped:
+            fen = FENSetter.flip_fen(fen)
+            moves = [FENSetter.flip_uci_move(m) for m in moves]
+        return fen, moves
+
+    def _flip_bestmove(self, best_move):
+        """is_flipped일 때 엔진의 bestmove를 실제 보드 좌표로 역변환합니다."""
+        if not self.is_flipped:
+            return best_move
+        from app.utils import FENSetter
+        return FENSetter.flip_uci_move(best_move)
+
     def _get_uci_moves(self):
         """move_history(표시용)를 UCI 수순 리스트로 변환합니다."""
         from app.utils import CoordMapper
@@ -80,10 +101,10 @@ class GameManager:
         return result
 
     def _run_analysis_cycle(self):
-        """현재 포지션에 대해 분석을 한 번 수행합니다."""
         if self.current_mode != "analysis" or not self.engine:
             return
-        self.engine.analyze_position(self.cfg.INITIAL_FEN, self._get_uci_moves(), self._on_analysis_result)
+        fen, moves = self._get_engine_fen_and_moves()
+        self.engine.analyze_position(fen, moves, self._on_analysis_result)
 
     def _on_analysis_result(self, data, is_info=False):
         """엔진 분석 결과가 도착했을 때 호출되는 콜백"""
@@ -154,9 +175,15 @@ class GameManager:
         self.stop_current_mode()
         self.current_mode = "game"
         self.player_side = self._detect_player_side()
-        print(f"GameManager: 대국 모드 시작 (플레이어: {'초' if self.player_side == 'w' else '한'})")
+        # 한이 아래쪽(K_row < k_row)이면 뒤집힌 상태
+        K_row = k_row = -1
+        for r in range(self.cfg.ROWS):
+            for c in range(self.cfg.COLS):
+                if self.model.grid[r][c] == 'K': K_row = r
+                if self.model.grid[r][c] == 'k': k_row = r
+        self.is_flipped = (k_row > K_row)
+        print(f"GameManager: 대국 모드 시작 (플레이어: {'초' if self.player_side == 'w' else '한'}, flipped: {self.is_flipped})")
         self._refresh_ui()
-        # 엔진이 먼저 둬야 하는 경우 (사용자가 한, 현재 턴이 초)
         if self.current_turn != self.player_side:
             self._engine_move()
 
@@ -182,12 +209,13 @@ class GameManager:
     def _auto_game_step(self):
         if self.current_mode != "auto_game" or not self.engine or not self.engine.is_ready:
             return
-        self.engine.analyze_position(self.cfg.INITIAL_FEN, self._get_uci_moves(), self._on_auto_game_result)
+        fen, moves = self._get_engine_fen_and_moves()
+        self.engine.analyze_position(fen, moves, self._on_auto_game_result)
 
     def _on_auto_game_result(self, data, is_info=False):
         if self.current_mode != "auto_game" or is_info:
             return
-        best_move = data
+        best_move = self._flip_bestmove(data)  # 뒤집힌 경우 역변환
         from app.utils import CoordMapper
         parsed = CoordMapper.parse_uci(best_move)
         if not parsed:
@@ -195,18 +223,13 @@ class GameManager:
         f1, r1, f2, r2 = parsed
         c1, c2 = ord(f1) - ord('a'), ord(f2) - ord('a')
         row1, row2 = 10 - r1, 10 - r2
-
-        def _do_move():
-            if self.current_mode != "auto_game":
-                return
-            self._log_engine_move(best_move)
-            self.execute_move(best_move, row1, c1, row2, c2)
-            self._refresh_ui()
-            if hasattr(self, '_root'):
-                self._root.after(self.cfg.AUTO_GAME_DELAY, self._auto_game_step)
-
+        if self.current_mode != "auto_game":
+            return
+        self._log_engine_move(best_move)
+        self.execute_move(best_move, row1, c1, row2, c2)
+        self._refresh_ui()
         if hasattr(self, '_root'):
-            self._root.after(0, _do_move)
+            self._root.after(self.cfg.AUTO_GAME_DELAY, self._auto_game_step)
 
     def stop_current_mode(self):
         if self.current_mode != "idle":
@@ -306,16 +329,15 @@ class GameManager:
             self._engine_move()
 
     def _engine_move(self):
-        """엔진이 현재 포지션을 분석하여 수를 둡니다."""
         if not self.engine or not self.engine.is_ready:
             return
-        self.engine.analyze_position(self.cfg.INITIAL_FEN, self._get_uci_moves(), self._on_engine_move_result)
+        fen, moves = self._get_engine_fen_and_moves()
+        self.engine.analyze_position(fen, moves, self._on_engine_move_result)
 
     def _on_engine_move_result(self, data, is_info=False):
-        """엔진의 bestmove를 받아 실제로 수를 실행합니다."""
         if self.current_mode != "game" or is_info:
             return
-        best_move = data
+        best_move = self._flip_bestmove(data)  # 뒤집힌 경우 역변환
         from app.utils import CoordMapper
         parsed = CoordMapper.parse_uci(best_move)
         if not parsed:
@@ -323,12 +345,9 @@ class GameManager:
         f1, r1, f2, r2 = parsed
         c1, c2 = ord(f1) - ord('a'), ord(f2) - ord('a')
         row1, row2 = 10 - r1, 10 - r2
-        def _do_move():
-            self._log_engine_move(best_move)
-            self.execute_move(best_move, row1, c1, row2, c2)
-            self._refresh_ui()
-        if hasattr(self, '_root'):
-            self._root.after(0, _do_move)
+        self._log_engine_move(best_move)
+        self.execute_move(best_move, row1, c1, row2, c2)
+        self._refresh_ui()
 
     def pass_turn(self):
         """한수쉼을 실행합니다."""

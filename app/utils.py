@@ -286,6 +286,33 @@ class FENSetter:
     }
 
     @staticmethod
+    def flip_fen(fen):
+        """
+        FEN의 보드 방향을 상하 반전합니다.
+        한이 아래쪽인 FEN → 엔진 표준 방향(한 위, 초 아래)으로 변환할 때 사용.
+        """
+        parts = fen.split()
+        ranks = parts[0].split('/')
+        # rank 순서만 역전 (대소문자 유지)
+        flipped = '/'.join(ranks[::-1])
+        # 턴은 그대로 유지 (선수는 항상 초)
+        return f"{flipped} {parts[1]} {' '.join(parts[2:])}"
+
+    @staticmethod
+    def flip_uci_move(uci_move):
+        """
+        UCI 수순을 뒤집힌 FEN 기준으로 변환합니다.
+        rank r → 11 - r 으로 변환 (rank 1↔1, rank 10↔1 등)
+        """
+        if uci_move == '@@@@':
+            return '@@@@'
+        parsed = CoordMapper.parse_uci(uci_move)
+        if not parsed:
+            return uci_move
+        f1, r1, f2, r2 = parsed
+        return f"{f1}{11 - r1}{f2}{11 - r2}"
+
+    @staticmethod
     def get_initial_fen(han_key, cho_key, start_player='w'):
         """선택된 차림 키워드를 조합하여 표준 FEN 문자열 생성"""
         han = FENSetter.FORMATIONS['han'].get(han_key, 'rbna1abnr')
