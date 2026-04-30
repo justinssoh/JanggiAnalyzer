@@ -94,4 +94,5 @@ class NewGameDialog(tk.Toplevel):
         
         # 매니저에게 FEN 데이터 전달하여 게임 초기화
         self.manager.request_new_game(new_fen)
+        self.manager.start_game_mode()
         self.destroy()
