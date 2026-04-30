@@ -68,16 +68,22 @@ class GameManager:
         self._refresh_ui()
         self._run_analysis_cycle()
 
+    def _get_uci_moves(self):
+        """move_history(표시용)를 UCI 수순 리스트로 변환합니다."""
+        from app.utils import CoordMapper
+        result = []
+        for m in self.move_history[:self.current_step]:
+            if m == '@@@@':
+                result.append('@@@@')
+            else:
+                result.append(CoordMapper.pgn_to_uci(m))
+        return result
+
     def _run_analysis_cycle(self):
         """현재 포지션에 대해 분석을 한 번 수행합니다."""
         if self.current_mode != "analysis" or not self.engine:
             return
-
-        # 현재 보드의 FEN 생성 (현재 턴 정보 포함)
-        fen = self.model.generate_fen(self.current_turn)
-        
-        # 엔진 분석 요청
-        self.engine.analyze_position(fen, self._on_analysis_result)
+        self.engine.analyze_position(self.cfg.INITIAL_FEN, self._get_uci_moves(), self._on_analysis_result)
 
     def _on_analysis_result(self, data, is_info=False):
         """엔진 분석 결과가 도착했을 때 호출되는 콜백"""
@@ -176,8 +182,7 @@ class GameManager:
     def _auto_game_step(self):
         if self.current_mode != "auto_game" or not self.engine or not self.engine.is_ready:
             return
-        fen = self.model.generate_fen(self.current_turn)
-        self.engine.analyze_position(fen, self._on_auto_game_result)
+        self.engine.analyze_position(self.cfg.INITIAL_FEN, self._get_uci_moves(), self._on_auto_game_result)
 
     def _on_auto_game_result(self, data, is_info=False):
         if self.current_mode != "auto_game" or is_info:
@@ -304,8 +309,7 @@ class GameManager:
         """엔진이 현재 포지션을 분석하여 수를 둡니다."""
         if not self.engine or not self.engine.is_ready:
             return
-        fen = self.model.generate_fen(self.current_turn)
-        self.engine.analyze_position(fen, self._on_engine_move_result)
+        self.engine.analyze_position(self.cfg.INITIAL_FEN, self._get_uci_moves(), self._on_engine_move_result)
 
     def _on_engine_move_result(self, data, is_info=False):
         """엔진의 bestmove를 받아 실제로 수를 실행합니다."""

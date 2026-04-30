@@ -86,28 +86,28 @@ class JanggiEngine:
     # ---------------------------------------------------------------------
     # 분석 로직 (비동기 실행 권장)
     # ---------------------------------------------------------------------
-    def analyze_position(self, fen, callback):
+    def analyze_position(self, fen, moves, callback):
         """
-        주어진 FEN 상태를 분석하여 베스트 무브를 찾습니다.
-        :param fen: 현재 장기판의 FEN 문자열
+        :param fen: 초기 FEN 문자열
+        :param moves: UCI 수순 리스트 (빈 리스트면 현재 FEN만 사용)
         :param callback: 분석 완료 후 결과를 전달받을 함수
         """
         if not self.is_ready:
             return
-
-        # 분석은 시간이 걸리므로 UI가 멈추지 않게 쓰레드로 실행합니다.
         thread = threading.Thread(
-            target=self._run_analysis_thread, 
-            args=(fen, callback), 
+            target=self._run_analysis_thread,
+            args=(fen, moves, callback),
             daemon=True
         )
         thread.start()
 
-    def _run_analysis_thread(self, fen, callback):
+    def _run_analysis_thread(self, fen, moves, callback):
         """별도 쓰레드에서 엔진 분석 결과를 기다리는 로직"""
-        # 1. 위치 전송
-        self.send_command(f"position fen {fen}")
-        # 2. 분석 시작 (config에 설정된 사고 시간 사용)
+        # 초기 FEN + 수순 전달 (엔진이 전체 맥락을 파악하도록)
+        if moves:
+            self.send_command(f"position fen {fen} moves {' '.join(moves)}")
+        else:
+            self.send_command(f"position fen {fen}")
         self.send_command(f"go movetime {config.MOVETIME}")
 
         best_move = None
