@@ -366,13 +366,14 @@ class GameManager:
         self.current_turn = 'b' if self.current_turn == 'w' else 'w'
         
         print(f"Pass Turn: @@@@ | Next Turn: {self.current_turn}")
-        
-        if self.current_mode == "analysis":
-            self._run_analysis_cycle()
-        elif self.current_mode == "game" and self.current_turn != self.player_side:
-            self._engine_move()
-            
         self._refresh_ui()
+
+        if self.current_mode == "analysis":
+            if hasattr(self, '_root'):
+                self._root.after(200, self._run_analysis_cycle)
+        elif self.current_mode == "game" and self.current_turn != self.player_side:
+            if hasattr(self, '_root'):
+                self._root.after(200, self._engine_move)
 
     # ---------------------------------------------------------------------
     # 유틸리티 및 엔진 연동
