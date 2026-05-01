@@ -353,18 +353,20 @@ class GameManager:
 
     def pass_turn(self):
         """한수쉼을 실행합니다."""
-        # 기보에 한수쉼 추가
+        # 이전 분석 결과 큐 비우기
+        if self.engine:
+            self.engine.stop_analysis()
+            try:
+                while True:
+                    self.engine._result_queue.get_nowait()
+            except Exception:
+                pass
+
         self.move_history.append("@@@@")
-        
-        # 현재 수순 업데이트
         self.current_step = len(self.move_history)
-        
-        # 보드 상태 저장 (한수쉼이므로 현재 상태 유지)
         self.board_states.append(self._copy_board())
-        
-        # 턴 교체
         self.current_turn = 'b' if self.current_turn == 'w' else 'w'
-        
+
         print(f"Pass Turn: @@@@ | Next Turn: {self.current_turn}")
         self._refresh_ui()
 
