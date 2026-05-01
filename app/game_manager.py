@@ -71,9 +71,25 @@ class GameManager:
         self._run_analysis_cycle()
 
     def _get_engine_fen_and_moves(self):
+        """
+        엔진에 전달할 FEN과 수순을 반환합니다.
+        @@@@(한수쉼)이 있으면 마지막 @@@@이후 시점의 보드 FEN을 새 시작점으로 사용합니다.
+        """
         from app.utils import FENSetter
-        fen = self.game_initial_fen
         moves = self._get_uci_moves()
+
+        # @@@@가 있으면 마지막 @@@@ 이후를 분리
+        last_pass = len(moves) - 1 - moves[::-1].index('@@@@') if '@@@@' in moves else -1
+        if last_pass >= 0:
+            # @@@@ 시점의 보드 상태를 FEN으로 사용
+            pass_board = self.board_states[last_pass + 1]
+            turn = 'b' if (last_pass + 1) % 2 != 0 else 'w'
+            from app.utils import FENConverter
+            fen = FENConverter.grid_to_fen(pass_board, turn)
+            moves = moves[last_pass + 1:]
+        else:
+            fen = self.game_initial_fen
+
         if self.is_flipped:
             fen = FENSetter.flip_fen(fen)
             moves = [FENSetter.flip_uci_move(m) for m in moves]
