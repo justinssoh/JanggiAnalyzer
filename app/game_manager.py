@@ -45,6 +45,7 @@ class GameManager:
         self.current_step = 0                       # 현재 화면에 표시되는 수순 번호
         self.current_turn = "w"                     # 'w'는 초(Blue), 'b'는 한(Red)
         self.current_fen = self.cfg.INITIAL_FEN     # 현재 FEN 문자열
+        self.game_initial_fen = self.cfg.INITIAL_FEN  # 이 대국의 시작 FEN
         self.is_game_over = False
         self.selected_pos = None                    # UI에서 선택된 칸 (row, col)
         self.board_states = [self._copy_board()]    # 각 수순의 보드 상태 저장 (초기 상태)
@@ -70,12 +71,8 @@ class GameManager:
         self._run_analysis_cycle()
 
     def _get_engine_fen_and_moves(self):
-        """
-        엔진에 전달할 FEN과 수순을 반환합니다.
-        is_flipped이면 FEN과 수순을 표준 방향으로 변환합니다.
-        """
         from app.utils import FENSetter
-        fen = self.cfg.INITIAL_FEN
+        fen = self.game_initial_fen
         moves = self._get_uci_moves()
         if self.is_flipped:
             fen = FENSetter.flip_fen(fen)
@@ -171,17 +168,20 @@ class GameManager:
         if k_row > K_row: return 'b'
         return 'w'
 
-    def start_game_mode(self):
-        self.stop_current_mode()
-        self.current_mode = "game"
-        self.player_side = self._detect_player_side()
-        # 한이 아래쪽(K_row < k_row)이면 뒤집힌 상태
+    def _update_is_flipped(self):
+        """보드에서 K/k 위치를 보고 is_flipped를 갱신합니다."""
         K_row = k_row = -1
         for r in range(self.cfg.ROWS):
             for c in range(self.cfg.COLS):
                 if self.model.grid[r][c] == 'K': K_row = r
                 if self.model.grid[r][c] == 'k': k_row = r
         self.is_flipped = (k_row > K_row)
+
+    def start_game_mode(self):
+        self.stop_current_mode()
+        self.current_mode = "game"
+        self.player_side = self._detect_player_side()
+        self._update_is_flipped()
         print(f"GameManager: 대국 모드 시작 (플레이어: {'초' if self.player_side == 'w' else '한'}, flipped: {self.is_flipped})")
         self._refresh_ui()
         if self.current_turn != self.player_side:
@@ -190,7 +190,8 @@ class GameManager:
     def start_auto_game_mode(self):
         self.stop_current_mode()
         self.current_mode = "auto_game"
-        print("GameManager: 자동 대국 모드 시작")
+        self._update_is_flipped()
+        print(f"GameManager: 자동 대국 모드 시작 (flipped: {self.is_flipped})")
         self._refresh_ui()
         self._auto_game_step()
 
@@ -439,6 +440,7 @@ class GameManager:
         # FEN으로 보드 재설정
         self.model._parse_fen(fen)
         self.current_fen = fen
+        self.game_initial_fen = fen  # 엔진용 시작 FEN 저장
         
         # 턴 정보 재설정 (FEN에서 추출)
         fen_parts = fen.split()
@@ -472,6 +474,7 @@ class GameManager:
         
         # 2. 현재 FEN 저장 및 게임 상태 초기화
         self.current_fen = fen
+        self.game_initial_fen = fen  # 엔진용 시작 FEN 저장
         self.is_game_over = False
         self.selected_pos = None
         
