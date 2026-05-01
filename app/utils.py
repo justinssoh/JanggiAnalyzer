@@ -300,12 +300,8 @@ class FENSetter:
 
     @staticmethod
     def flip_uci_move(uci_move):
-        """
-        UCI 수순을 뒤집힌 FEN 기준으로 변환합니다.
-        rank r → 11 - r 으로 변환 (rank 1↔1, rank 10↔1 등)
-        """
-        if uci_move == '@@@@':
-            return '@@@@'
+        if uci_move in ('@@@@', '0000'):
+            return uci_move
         parsed = CoordMapper.parse_uci(uci_move)
         if not parsed:
             return uci_move
