@@ -304,3 +304,18 @@ class JanggiApp:
         self.game_manager.set_ui_callback(self.refresh_ui)
 
 ```
+
+
+## Tips
+* 테스트 용 코드 만들기
+예: FEN 무자열을 생성하는 코드를 확인하는 방법
+프로젝트 루트 디렉토리에서 실행
+```bash
+python3 -c "
+from app.utils import FENSetter
+fen = FENSetter.get_initial_fen_cho_player('상마상마', '상마상마')
+print(fen)
+"
+```
+
+프로젝트 루트 디렉토리에서 python 대화형 셸에서 실행해도 됩니다. tests 디렉토리에 테스트 파일로 만들어도 가능합니다.

@@ -4,16 +4,16 @@ import re
 
 class CoordMapper:
     """
-    장기판의 좌표 변환을 전담하는 유틸리티 클래스입니다.
+    장기판의 좌표 변환을 전담하는 유틸리티 클래스
     1. 배열 인덱스 (row, col): 0~9, 0~8
     2. 엔진 UCI (f10e9): a~i, 1~10
-    3. 화면 픽셀 (x, y): Canvas상의 위치
+    3. 화면 픽셀 (x, y): Canvas 상의 위치
     """
 
     @staticmethod
     def parse_uci(uci_str):
         """
-        'a10c9' 또는 'a4b5'에서 (f1, r1, f2, r2)를 안전하게 분리합니다.
+        'a10c9' 또는 'a4b5'에서 (f1, r1, f2, r2)를 안전하게 분리
         결과 예: ('a', 10, 'c', 9)
         """
         # [a-i] 문자 하나와 [0-9]+ 숫자 한뭉치를 번갈아 찾음
@@ -88,7 +88,7 @@ class CoordMapper:
     @staticmethod
     def uci_to_grid(uci_str):
         """
-        엔진의 UCI 문자열(e10e9)을 배열 인덱스 (r1, c1, r2, c2)로 변환합니다.
+        엔진의 UCI 문자열(e10e9)을 배열 인덱스 (r1, c1, r2, c2)로 변환
         """
         import re
         # 숫자와 문자를 분리 (예: e, 10, e, 9)
@@ -108,7 +108,7 @@ class CoordMapper:
     @staticmethod
     def get_piece_color(piece_char):
         """
-        기물 문자를 보고 초(Blue/Upper)인지 한(Red/Lower)인지 판별합니다.
+        기물 문자를 보고 초(Blue/Upper)인지 한(Red/Lower)인지 판별
         """
         if piece_char == '.':
             return None

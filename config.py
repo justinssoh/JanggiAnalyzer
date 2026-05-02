@@ -31,7 +31,7 @@ CELL_SIZE = 60       # 한 칸의 크기
 OFFSET = 30          # 판 가장자리의 여백
 
 # 초기 장기판 배열 (FEN 포맷)
-# 'w'는 초(Blue)가 선수임을 의미합니다.
+# 'w'는 초(Blue)가 선수임을 의미
 INITIAL_FEN = 'rbna1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RBNA1ABNR w 0 1'
 
 
@@ -39,7 +39,7 @@ INITIAL_FEN = 'rbna1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RBNA1ABNR w
 # [3] 통합 기물 데이터 매핑 (PIECE_DATA)
 # =========================================================================
 # UCI 기호를 키(Key)로 사용합니다. (대문자: 초나라, 소문자: 한나라)
-# 이 데이터는 로직(점수)과 UI(이름, 이미지 경로)에서 공통으로 참조합니다.
+# 이 데이터는 로직(점수)과 UI(이름, 이미지 경로)에서 공통으로 참조
 PIECE_DATA = {
     # --- 초나라 (Cho / Blue) ---
     'K': {'score': 0,  'name': '楚', 'full_name': '궁', 'color': 'blue'},
@@ -91,4 +91,5 @@ ENGINE_PATH = os.path.join(ENGINE_DIR, ENGINE_NAME)
 MOVETIME = 1000      # 수당 엔진 사고 시간 (밀리초)
 THREADS = 2          # 엔진 사용 스레드 수
 HASH_SIZE = 128      # 엔진 해시 메모리 (MB)
+
 AUTO_GAME_DELAY = 500  # 자동 대국 수 사이 딜레이 (밀리초)

@@ -15,7 +15,7 @@ if current_dir not in sys.path:
 # -------------------------------------------------------------------------
 # 프로젝트 구성 요소 Import
 # -------------------------------------------------------------------------
-import config  # 루트의 config.py 불러오기
+import config                   # 루트의 config.py 불러오기
 
 # 모델, 엔진, 매니저 Import
 from app.board import JanggiBoardModel
@@ -27,19 +27,18 @@ from app.ui.main_window import JanggiApp
 
 def main():
     """
-    프로그램의 진입점(Entry Point).
-    모든 객체의 생명주기가 여기서 시작됩니다.
+    프로그램의 진입점(Entry Point)
     """
     
     # [1] Tkinter 루트 객체 생성
     root = tk.Tk()
  
     # [2] 모델(Data) 초기화
-    # 장기판의 상태(배열)를 관리하는 순수 데이터 클래스입니다.
+    # 장기판의 상태(배열)를 관리하는 순수 데이터 클래스
     model = JanggiBoardModel()
     
     # [3] 엔진(Analysis) 초기화
-    # 외부 Fairy-Stockfish 프로세스와 통신을 담당합니다.
+    # 외부 Fairy-Stockfish 프로세스와 통신을 담당
     engine_path = config.ENGINE_PATH
     engine = None
 
@@ -48,14 +47,14 @@ def main():
         config.ENGINE_NAME = "fairy-stockfish_x86-64.exe"
     elif sys.platform == "linux":
         config.ENGINE_NAME = "fairy-stockfish_x86-64"
-    # Mac OS 등 다른 OS에 대한 처리도 추가할 수 있습니다.
+    # Mac OS 등 다른 OS에 대한 처리도 추가 가능
 
     config.ENGINE_PATH = os.path.join(os.path.dirname(__file__), "engine", config.ENGINE_NAME)
-    engine_path = config.ENGINE_PATH # 업데이트된 경로로 다시 설정
+    engine_path = config.ENGINE_PATH        # 업데이트된 경로로 다시 설정
 
     if not os.path.exists(engine_path):
         print(f"!!! 경고: 엔진 파일을 찾을 수 없습니다 !!!\n경로: {engine_path}")
-        # 엔진이 없어도 프로그램은 실행되도록 예외 처리를 합니다。
+        # 엔진이 없어도 프로그램은 실행되도록 예외 처리
     else:
         try:
             engine = JanggiEngine()
@@ -64,23 +63,23 @@ def main():
             print(f"오류: 엔진 로드 중 문제가 발생했습니다: {e}")
 
     # [4] 게임 매니저(GameManager) 생성 - 프로그램의 '심장'
-    # 모델과 엔진을 소유하며, 게임의 규칙(턴, 이동 등)을 총괄합니다.
-    # 나중에 UI에서 발생하는 모든 명령은 이 manager를 거치게 됩니다.
+    # 모델과 엔진을 소유하며, 게임의 규칙(턴, 이동 등)을 총괄
+    # 나중에 UI에서 발생하는 모든 명령은 이 manager를 거치게 됨
     game_manager = GameManager(model, engine, config)
 
 # -------------------------------------------------------------------------
 # 메인 UI 앱(JanggiApp) 생성 및 조립
 # -------------------------------------------------------------------------
-    # root(창), config(설정), manager(로직)를 전달합니다.
-    # 의존성 주입(Dependency Injection)을 통해 UI가 로직을 알게 합니다.
+    # root(창), config(설정), manager(로직)를 전달
+    # 의존성 주입(Dependency Injection)을 통해 UI가 로직을 알게 함
     try:
         app = JanggiApp(root, config, game_manager)
     except Exception as e:
         print(f"오류: UI 초기화 중 문제가 발생했습니다: {e}")
         sys.exit(1)
 
-    # [8] 프로그램 실행 (이벤트 루프 시작)
-    # 사용자가 창을 닫기 전까지 여기서 대기합니다.
+    # 프로그램 실행 (이벤트 루프 시작)
+    # 사용자가 창을 닫기 전까지 여기서 대기
     print("장기 분석기를 실행합니다...")
     root.mainloop()
 
