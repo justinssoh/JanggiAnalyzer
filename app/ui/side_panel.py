@@ -201,11 +201,6 @@ class SidePanel(tk.Frame):
 
     def update_move_count(self, current, total):
         self.move_count_var.set(f"{current} / {total}")
-        # game/auto_game 모드에서 네비게이션 비활성화
-        mode = self.manager.current_mode
-        state = "disabled" if mode in ("game", "auto_game") else "normal"
-        for btn in (self.btn_first, self.btn_prev, self.btn_next, self.btn_last):
-            btn.config(state=state)
 
     def log_analysis(self, text):
         """엔진 분석 로그를 출력합니다."""
