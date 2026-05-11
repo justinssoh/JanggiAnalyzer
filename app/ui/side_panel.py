@@ -160,7 +160,7 @@ class SidePanel(tk.Frame):
         self.txt_history.config(state="normal")
         self.txt_history.delete("1.0", tk.END)
         
-        initial_header = f'[FEN "{self.cfg.INITIAL_FEN}"]\n\n'
+        initial_header = f'[FEN "{self.cfg.DEFAULT_FEN}"]\n\n'
         self.txt_history.insert(tk.END, initial_header)
         
         self.txt_history.config(state="disabled")
@@ -178,7 +178,7 @@ class SidePanel(tk.Frame):
         """턴 정보와 기보 리스트를 받아 UI를 갱신합니다."""
         # FEN이 제공되지 않으면 기본값 사용
         if fen is None:
-            fen = self.cfg.INITIAL_FEN
+            fen = self.cfg.DEFAULT_FEN
             
         # 1. 수순 표시 업데이트
         total_moves = len(history)

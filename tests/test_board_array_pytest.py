@@ -37,7 +37,7 @@ def test_flip_fen():
     """한이 아래쪽 FEN을 뒤집으면 표준 FEN과 일치해야 함"""
     han_below = FENSetter.get_initial_fen_cho_player('상마상마', '상마상마')
     flipped = FENSetter.flip_fen(han_below)
-    assert flipped.split()[0] == config.INITIAL_FEN.split()[0]
+    assert flipped.split()[0] == config.DEFAULT_FEN.split()[0]
 
 
 def test_flip_fen_double():

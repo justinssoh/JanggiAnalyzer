@@ -49,7 +49,7 @@ run("한 아래 FEN - row9 한 차/상/마/사", model2.grid[9][0], 'r')
 # -----------------------------------------------------------------------
 flipped = FENSetter.flip_fen(han_below)
 run("flip_fen - 표준 FEN과 일치",
-    flipped.split()[0], config.INITIAL_FEN.split()[0])
+    flipped.split()[0], config.DEFAULT_FEN.split()[0])
 run("flip_fen - 두 번 뒤집으면 원본 복원",
     FENSetter.flip_fen(flipped).split()[0], han_below.split()[0])
 

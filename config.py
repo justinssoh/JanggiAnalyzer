@@ -32,7 +32,7 @@ OFFSET = 30          # 판 가장자리의 여백
 
 # 초기 장기판 배열 (FEN 포맷)
 # 'w'는 초(Blue)가 선수임을 의미
-INITIAL_FEN = 'rbna1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RBNA1ABNR w 0 1'
+DEFAULT_FEN = 'rbna1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RBNA1ABNR w 0 1'
 
 
 # =========================================================================
