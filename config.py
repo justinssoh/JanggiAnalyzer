@@ -80,10 +80,11 @@ COLOR_HAN = "#cc0000"         # 진한 빨강
 # =========================================================================
 # [5] 엔진 설정 (Engine Settings)
 # =========================================================================
-# 운영체제에 따라 확장자를 자동으로 붙여줍니다. (.exe 등)
+import sys
 ENGINE_NAME = "fairy-stockfish_x86-64"
-if os.name == 'nt': # Windows인 경우
+if sys.platform == "win32":
     ENGINE_NAME += ".exe"
+# Linux, macOS는 확장자 없음
 
 ENGINE_PATH = os.path.join(ENGINE_DIR, ENGINE_NAME)
 
