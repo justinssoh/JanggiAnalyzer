@@ -309,6 +309,34 @@ class FENSetter:
         return f"{f1}{11 - r1}{f2}{11 - r2}"
 
     @staticmethod
+    def flip_fen(fen):
+        """
+        [학습용 - 현재 미사용]
+        FEN의 rank 순서를 역전합니다. (한 위↔한 아래)
+        Fairy-Stockfish는 FEN 방향에 관계없이 w 턴 기물을 움직이므로
+        실제 엔진 통신에는 사용하지 않습니다.
+        """
+        parts = fen.split()
+        ranks = parts[0].split('/')
+        flipped = '/'.join(ranks[::-1])
+        return f"{flipped} {parts[1]} {' '.join(parts[2:])}"
+
+    @staticmethod
+    def flip_uci_move(uci_move):
+        """
+        [학습용 - 현재 미사용]
+        UCI 수순의 rank를 뒤집습니다. (rank r → 11 - r)
+        flip_fen과 쌍으로 사용하며, 두 번 적용하면 원본으로 복원됩니다.
+        """
+        if uci_move in ('@@@@', '0000'):
+            return uci_move
+        parsed = CoordMapper.parse_uci(uci_move)
+        if not parsed:
+            return uci_move
+        f1, r1, f2, r2 = parsed
+        return f"{f1}{11 - r1}{f2}{11 - r2}"
+
+    @staticmethod
     def get_initial_fen(han_key, cho_key, start_player='w'):
         """선택된 차림 키워드를 조합하여 표준 FEN 문자열 생성"""
         han = FENSetter.FORMATIONS['han'].get(han_key, 'rbna1abnr')
