@@ -395,10 +395,11 @@ class GameManager:
         if self.engine:
             self.engine.reset_engine()
 
-        self.model.reset()
+        # FEN으로 보드 초기화
         self.model._parse_fen(fen)
         self.is_game_over = False
         self.selected_pos = None
+        self.legal_moves = set()
 
         fen_parts = fen.split()
         self.current_turn = fen_parts[1] if len(fen_parts) > 1 else 'w'

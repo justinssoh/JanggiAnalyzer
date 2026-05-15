@@ -1,9 +1,11 @@
-Janggi Analyzer-0.8.5
+Janggi Analyzer-0.8.6
 =====
 한국 전통 장기를 컴퓨터와 둘 수 있고 기보(.pgn)를 저장하고 분석하는 UI 프로그램입니다.
 
 장기 규칙과 분석은 [ fairy-stockfish ](https://fairy-stockfish.github.io/) 엔진을 이용합니다.
 
+* 0.8.6
+    FEN 스택 및 기물점수 초기화
 * 0.8.5
     졸이나 병이 후진하는 문제 해결
 
