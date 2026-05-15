@@ -11,6 +11,8 @@ class JanggiEngine:
         self.is_ready = False
         self._lock = threading.Lock()       # 한 번에 하나의 분석만 허용
         self._result_queue = queue.Queue()  # 분석 결과를 메인 스레드로 전달
+        self._perft_process = None          # legal moves 전용 별도 프로세스
+        self._perft_lock = threading.Lock()
         self.path = config.ENGINE_PATH
         self.connect()
 
@@ -75,30 +77,46 @@ class JanggiEngine:
                 self.process.kill()
                 self.process = None
 
-    def get_legal_moves(self, fen):
+    def get_legal_moves_async(self, fen, callback):
         """
-        현재 FEN에서 합법적인 수 목록을 반환합니다.
-        :return: UCI 수 문자열 집합 (ex: {'a1a2', 'a4b4', ...})
+        현재 FEN에서 합법적인 수 목록을 비동기로 가져옵니다.
+        결과는 callback(legal_moves: set) 형태로 큐를 통해 전달됩니다.
         """
         if not self.is_ready:
-            return set()
-        self._send(f"position fen {fen}")
-        self._send("go perft 1")
+            self._result_queue.put((callback, set(), 'legal'))
+            return
+        thread = threading.Thread(
+            target=self._run_legal_moves_thread,
+            args=(fen, callback),
+            daemon=True
+        )
+        thread.start()
 
-        legal_moves = set()
+    def _run_legal_moves_thread(self, fen, callback):
         import re
-        while True:
-            if not self.process:
-                break
-            line = self.process.stdout.readline().strip()
-            if not line:
-                continue
-            if line.startswith("Nodes searched"):
-                break
-            m = re.match(r'^([a-i]\d+[a-i]\d+):\s*\d+$', line)
-            if m:
-                legal_moves.add(m.group(1))
-        return legal_moves
+        legal_moves = set()
+        with self._lock:
+            if not self.process or not self.is_ready:
+                self._result_queue.put((callback, set(), 'legal'))
+                return
+            self._send("isready")
+            if not self._drain_until("readyok"):
+                self._result_queue.put((callback, set(), 'legal'))
+                return
+            self._send(f"position fen {fen}")
+            self._send("go perft 1")
+            while True:
+                if not self.process:
+                    break
+                line = self.process.stdout.readline().strip()
+                if not line:
+                    continue
+                if line.startswith("Nodes searched"):
+                    break
+                m = re.match(r'^([a-i]\d+[a-i]\d+):\s*\d+$', line)
+                if m:
+                    legal_moves.add(m.group(1))
+        self._result_queue.put((callback, legal_moves, 'legal'))
 
     def analyze_position(self, fen, moves, callback):
         """
@@ -158,8 +176,11 @@ class JanggiEngine:
         """
         try:
             while True:
-                callback, data, is_info = self._result_queue.get_nowait()
+                callback, data, kind = self._result_queue.get_nowait()
                 if callback:
-                    callback(data, is_info=is_info)
+                    if kind == 'legal':
+                        callback(data)
+                    else:
+                        callback(data, is_info=kind)
         except queue.Empty:
             pass

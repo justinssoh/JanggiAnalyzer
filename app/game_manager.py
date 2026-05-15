@@ -17,18 +17,19 @@ class GameManager:
         if self.engine:
             self.engine.reset_engine()
 
-        self.move_history = []      # 기보 기록 (표시용)
-        self.current_step = 0       # 현재 수순
+        self.move_history = []
+        self.current_step = 0
         self.current_turn = 'w'
         self.is_game_over = False
         self.selected_pos = None
-        self.fen_stack = [self.cfg.DEFAULT_FEN]  # FEN 스택: 수순별 FEN 저장
+        self.fen_stack = [self.cfg.DEFAULT_FEN]
+        self.is_flipped = False  # 초가 위쪽이면 True
 
         self.current_mode = 'idle'
         self.engine_process = None
         self.engine_analysis_thread = None
         self.engine_game_thread = None
-        self.legal_moves = set()  # 선택된 기물의 합법적 이동 목록
+        self.legal_moves = set()
 
         print('GameManager: 게임이 초기화되었습니다.')
 
@@ -41,6 +42,29 @@ class GameManager:
         if self.current_step < len(self.fen_stack):
             return self.fen_stack[self.current_step]
         return self.fen_stack[-1]
+
+    @property
+    def engine_fen(self):
+        """엔진에 전달할 FEN - is_flipped이면 뒤집어서 반환"""
+        from app.utils import FENSetter
+        fen = self.current_fen
+        return FENSetter.flip_fen(fen) if self.is_flipped else fen
+
+    def _flip_bestmove(self, best_move):
+        """is_flipped일 때 엔진의 bestmove를 실제 보드 좌표로 역변환"""
+        if not self.is_flipped:
+            return best_move
+        from app.utils import FENSetter
+        return FENSetter.flip_uci_move(best_move)
+
+    def _update_is_flipped(self):
+        """보드에서 K/k 위치를 보고 is_flipped를 갱신"""
+        K_row = k_row = -1
+        for r in range(self.cfg.ROWS):
+            for c in range(self.cfg.COLS):
+                if self.model.grid[r][c] == 'K': K_row = r
+                if self.model.grid[r][c] == 'k': k_row = r
+        self.is_flipped = (K_row < k_row)  # 초가 위쪽이면 True
 
     # ------------------------------------------------------------------
     # UI 콜백
@@ -110,7 +134,7 @@ class GameManager:
     def _run_analysis_cycle(self):
         if self.current_mode != 'analysis' or not self.engine:
             return
-        self.engine.analyze_position(self.current_fen, [], self._on_analysis_result)
+        self.engine.analyze_position(self.engine_fen, [], self._on_analysis_result)
 
     def _on_analysis_result(self, data, is_info=False):
         if self.current_mode != 'analysis':
@@ -146,7 +170,7 @@ class GameManager:
     def _engine_move(self):
         if not self.engine or not self.engine.is_ready:
             return
-        self.engine.analyze_position(self.current_fen, [], self._on_engine_move_result)
+        self.engine.analyze_position(self.engine_fen, [], self._on_engine_move_result)
 
     def _on_engine_move_result(self, data, is_info=False):
         if self.current_mode != 'game' or is_info:
@@ -156,7 +180,8 @@ class GameManager:
     def _auto_game_step(self):
         if self.current_mode != 'auto_game' or not self.engine or not self.engine.is_ready:
             return
-        self.engine.analyze_position(self.current_fen, [], self._on_auto_game_result)
+        print(f'[DEBUG] auto_game FEN: {self.engine_fen}')
+        self.engine.analyze_position(self.engine_fen, [], self._on_auto_game_result)
 
     def _on_auto_game_result(self, data, is_info=False):
         if self.current_mode != 'auto_game' or is_info:
@@ -167,6 +192,7 @@ class GameManager:
             self._root.after(self.cfg.AUTO_GAME_DELAY, self._auto_game_step)
 
     def _apply_engine_move(self, best_move):
+        best_move = self._flip_bestmove(best_move)  # 뒤집힌 경우 역변환
         """엔진 bestmove를 보드에 적용합니다."""
         if best_move == '(none)':
             # 더 이상 둘 수 없음 = 외통
@@ -209,11 +235,9 @@ class GameManager:
             # 기물 선택
             if piece != '.' and self._is_my_turn(piece):
                 self.selected_pos = (row, col)
-                # 엔진에서 legal moves 가져오기
+                self.legal_moves = set()  # 비동기 결과 대기 중 임시 비움
                 if self.engine and self.engine.is_ready:
-                    self.legal_moves = self.engine.get_legal_moves(self.current_fen)
-                else:
-                    self.legal_moves = set()
+                    self.engine.get_legal_moves_async(self.engine_fen, self._on_legal_moves)
                 self._refresh_ui()
         else:
             prev_row, prev_col = self.selected_pos
@@ -225,18 +249,26 @@ class GameManager:
             else:
                 move_uci = self._coords_to_uci(prev_row, prev_col, row, col)
 
-                if not self.legal_moves or move_uci in self.legal_moves:
+                if self.legal_moves and move_uci in self.legal_moves:
                     # 합법적인 수 → 이동 실행
                     self.execute_move(move_uci, prev_row, prev_col, row, col)
                     if self.current_mode == 'analysis':
                         self._run_analysis_cycle()
                 else:
-                    # 불법 이동 → 선택 취소
-                    print(f'Invalid move: {move_uci}')
+                    # 불법 이동 또는 legal_moves 미확보 → 선택 취소
+                    print(f'[DEBUG] Invalid move: {move_uci} (legal_moves 수: {len(self.legal_moves)})')
 
                 self.selected_pos = None
                 self.legal_moves = set()
             self._refresh_ui()
+
+    def _on_legal_moves(self, legal_moves):
+        """get_legal_moves_async 결과 콜백 - is_flipped이면 화면 좌표로 역변환"""
+        if self.is_flipped:
+            from app.utils import FENSetter
+            self.legal_moves = {FENSetter.flip_uci_move(mv) for mv in legal_moves}
+        else:
+            self.legal_moves = legal_moves
 
     def execute_move(self, move_uci, r1, c1, r2, c2):
         """기물을 이동하고 FEN 스택과 기보를 업데이트합니다."""
@@ -351,10 +383,13 @@ class GameManager:
         self.fen_stack = [fen]
         self.current_mode = 'idle'
         self.legal_moves = set()
+        self._update_is_flipped()
         if self.engine:
             self.engine.reset_engine()
         self._refresh_ui()
-        print(f'GameManager: 새로운 게임 시작 - FEN: {fen}')
+        print(f'GameManager: 새로운 게임 시작 - FEN: {fen}, flipped: {self.is_flipped}')
+        if self.engine:
+            self.start_analysis_mode()
 
     def load_and_start(self, fen, history):
         if self.engine:
@@ -380,11 +415,14 @@ class GameManager:
             self.fen_stack.append(self.model.generate_fen(self.current_turn))
 
         self.current_step = len(self.move_history)
+        self._update_is_flipped()
 
         if self.engine:
             self.engine.reset_engine()
         self._refresh_ui()
-        print(f'GameManager: PGN 로드 완료 - {len(history)}수')
+        print(f'GameManager: PGN 로드 완료 - {len(history)}수, flipped: {self.is_flipped}')
+        if self.engine:
+            self.start_analysis_mode()
 
     # ------------------------------------------------------------------
     # 유틸리티

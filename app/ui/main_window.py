@@ -39,6 +39,10 @@ class JanggiApp:
         # 5. 엔진 결과 큐 폴링 시작
         self._poll_engine()
 
+        # 6. 프로그램 시작 시 자동 분석 모드 시작
+        if self.game_manager.engine:
+            self.game_manager.start_analysis_mode()
+
     def _setup_ui(self):
         """좌우 배치를 담당하는 메인 프레임 설정"""
         # 전체를 감싸는 컨테이너
