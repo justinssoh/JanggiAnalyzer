@@ -28,7 +28,7 @@ class JanggiEngine:
                 bufsize=1
             )
             self._send("uci")
-            self._send("setoption name UCI_Variant value janggi")
+            self._send(f"setoption name UCI_Variant value {config.UCI_VARIANT}")
             self._send("isready")
             self._drain_until("readyok")
             self.is_ready = True
