@@ -18,21 +18,14 @@ class JanggiBoardModel:
 
     def reset(self):
         """
-        장기판의 모든 데이터를 초기 상태(config.DEFAULT_FEN)로 되돌림
-        GameManager에서 리셋 명령을 내릴 때 호출됨
+        장기판 배열을 빈 칸으로만 초기화.
+        기물 배치는 호출한 쪽에서 _parse_fen()으로 별도 수행.
         """
-        # 1. 모든 칸을 빈 칸으로 초기화
         for r in range(config.ROWS):
             for c in range(config.COLS):
                 self.grid[r][c] = '.'
-        
-        # 2. 잡힌 기물 목록 초기화
         self.captured_pieces = {"w": [], "b": []}
-        
-        # 3. FEN 문자열을 해석하여 기물 배치
-        self._parse_fen(config.DEFAULT_FEN)
-        
-        print(f"BoardModel: 데이터가 '{config.DEFAULT_FEN}' 기준으로 리셋되었습니다.")
+        print("BoardModel: 배열이 초기화되었습니다.")
 
     def _parse_fen(self, fen):
         """

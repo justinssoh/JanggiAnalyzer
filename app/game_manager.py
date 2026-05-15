@@ -13,6 +13,7 @@ class GameManager:
 
     def initialize_game(self):
         self.model.reset()
+        self.model._parse_fen(self.cfg.DEFAULT_FEN)
         if self.engine:
             self.engine.reset_engine()
 
@@ -338,11 +339,18 @@ class GameManager:
     # 새 대국 / PGN 로드
     # ------------------------------------------------------------------
     def request_new_game(self, fen):
-        self.initialize_game()
+        self.stop_current_mode()
+        self.model.reset()
         self.model._parse_fen(fen)
         fen_parts = fen.split()
         self.current_turn = fen_parts[1] if len(fen_parts) > 1 else 'w'
+        self.move_history = []
+        self.current_step = 0
+        self.is_game_over = False
+        self.selected_pos = None
         self.fen_stack = [fen]
+        self.current_mode = 'idle'
+        self.legal_moves = set()
         if self.engine:
             self.engine.reset_engine()
         self._refresh_ui()
