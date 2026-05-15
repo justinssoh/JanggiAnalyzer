@@ -2,6 +2,39 @@ import tkinter as tk
 from tkinter import ttk
 from app.utils import FENSetter
 
+
+class GameResultDialog(tk.Toplevel):
+    """승패 판정 결과를 표시하는 윈도우"""
+    def __init__(self, parent, result, reason, cho_score, han_score):
+        """
+        :param result: '초 승리' / '한 승리' / '무승부'
+        :param reason: 판정 이유 (외통/점수/기권/한수쉼/200수)
+        :param cho_score: 초 점수
+        :param han_score: 한 점수
+        """
+        super().__init__(parent)
+        self.title("대국 결과")
+        self.geometry("300x200")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        # 결과 색상
+        color = "#0040ff" if "초" in result else "#cc0000" if "한" in result else "#555555"
+
+        tk.Label(self, text=result,
+                 font=("Malgun Gothic", 24, "bold"),
+                 fg=color).pack(pady=(30, 5))
+
+        tk.Label(self, text=f"({reason})",
+                 font=("Malgun Gothic", 12)).pack()
+
+        tk.Label(self, text=f"초: {cho_score:.1f}  |  한: {han_score:.1f}",
+                 font=("Consolas", 11)).pack(pady=10)
+
+        tk.Button(self, text="확인", width=10,
+                  command=self.destroy).pack(pady=10)
+
 class NewGameDialog(tk.Toplevel):
     def __init__(self, parent, manager):
         super().__init__(parent)

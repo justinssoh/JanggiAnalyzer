@@ -140,8 +140,9 @@ class SidePanel(tk.Frame):
         self.manager.start_auto_game_mode()
 
     def _on_surrender(self):
-        print("SidePanel: 기권 요청")
-        # self.manager.surrender() # GameManager에 구현 필요
+        if self.manager.current_mode not in ('game', 'auto_game'):
+            return
+        self.manager.surrender(self.manager.player_side)
 
     def _on_pass(self):
         """한수쉼 실행"""

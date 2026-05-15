@@ -167,6 +167,12 @@ class GameManager:
 
     def _apply_engine_move(self, best_move):
         """엔진 bestmove를 보드에 적용합니다."""
+        if best_move == '(none)':
+            # 더 이상 둘 수 없음 = 외통
+            loser = self.current_turn
+            winner = '한 승리' if loser == 'w' else '초 승리'
+            self.declare_game_over(winner, '외통')
+            return
         parsed = CoordMapper.parse_uci(best_move)
         if not parsed:
             return
@@ -254,6 +260,12 @@ class GameManager:
 
         print(f'GameManager: Move Executed - {move_uci} (Step: {self.current_step})')
 
+        # 승패 조건 확인
+        result = self._check_game_over()
+        if result:
+            self.declare_game_over(*result)
+            return
+
         # 6. 대국 모드: 엔진 차례면 자동 실행
         if self.current_mode == 'game' and self.current_turn != self.player_side:
             self._engine_move()
@@ -276,6 +288,13 @@ class GameManager:
         self.current_step = len(self.move_history)
 
         print(f'Pass Turn: @@@@ | Next Turn: {self.current_turn}')
+
+        # 승패 조건 확인 (양쪽 한수쉼)
+        result = self._check_game_over()
+        if result:
+            self.declare_game_over(*result)
+            return
+
         self._refresh_ui()
 
         if self.current_mode == 'analysis':
@@ -362,6 +381,50 @@ class GameManager:
     # ------------------------------------------------------------------
     # 유틸리티
     # ------------------------------------------------------------------
+    def _check_game_over(self):
+        """승패 조건을 확인하고 판정 결과를 반환합니다.
+        :return: (result, reason) 또는 None
+        """
+        cho, han = self.calculate_scores()
+
+        # 1. 200수 제한
+        if len(self.move_history) >= 200:
+            if cho > han:
+                return '초 승리', '200수 제한 - 점수 판정'
+            elif han > cho:
+                return '한 승리', '200수 제한 - 점수 판정'
+            else:
+                return '무승부', '200수 제한 - 동점'
+
+        # 2. 양쪽 동시 한수쉼
+        if (len(self.move_history) >= 2 and
+                self.move_history[-1] == '@@@@' and
+                self.move_history[-2] == '@@@@'):
+            if cho > han:
+                return '초 승리', '양쪽 한수쉼 - 점수 판정'
+            elif han > cho:
+                return '한 승리', '양쪽 한수쉼 - 점수 판정'
+            else:
+                return '무승부', '양쪽 한수쉼 - 동점'
+
+        return None
+
+    def declare_game_over(self, result, reason):
+        """승패를 확정하고 UI에 판정 윈도우를 표시합니다."""
+        self.is_game_over = True
+        self.stop_current_mode()
+        cho, han = self.calculate_scores()
+        if hasattr(self, '_result_callback') and self._result_callback:
+            self._result_callback(result, reason, cho, han)
+        print(f'GameManager: 대국 종료 - {result} ({reason})')
+
+    def surrender(self, side):
+        """기권: side가 진 진영"""
+        if side == 'w':
+            self.declare_game_over('한 승리', '초 기권')
+        else:
+            self.declare_game_over('초 승리', '한 기권')
+
     def calculate_scores(self):
         """현재 보드의 초/한 기물 점수를 합산하여 반환합니다."""
         cho, han = 0, 0

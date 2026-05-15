@@ -33,6 +33,7 @@ class JanggiApp:
         # 4. 종료 프로토콜 설정 (엔진 프로세스 정리)
         self.game_manager.set_ui_callback(self.refresh_ui)
         self.game_manager._root = root
+        self.game_manager._result_callback = self._on_game_result
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         # 5. 엔진 결과 큐 폴링 시작
@@ -257,6 +258,12 @@ class JanggiApp:
             else:
                 messagebox.showerror("오류", "유효한 기보 파일이 아닙니다.")
     
+    def _on_game_result(self, result, reason, cho_score, han_score):
+        """판정 결과 윈도우를 표시합니다."""
+        from app.ui.dialogs import GameResultDialog
+        self.refresh_ui()
+        GameResultDialog(self.root, result, reason, cho_score, han_score)
+
     def _open_new_game_dialog(self):
         from app.ui.dialogs import NewGameDialog
         # GameManager 객체를 전달
