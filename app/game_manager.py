@@ -375,7 +375,7 @@ class GameManager:
                     cho += score
                 else:
                     han += score
-        return cho, han
+        return cho, han + self.cfg.DOM_SCORE
 
     def _is_my_turn(self, piece):
         if self.current_turn == 'w' and piece.isupper(): return True
