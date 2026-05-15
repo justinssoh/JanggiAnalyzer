@@ -27,6 +27,7 @@ class GameManager:
         self.engine_process = None
         self.engine_analysis_thread = None
         self.engine_game_thread = None
+        self.legal_moves = set()  # 선택된 기물의 합법적 이동 목록
 
         print('GameManager: 게임이 초기화되었습니다.')
 
@@ -198,19 +199,36 @@ class GameManager:
         piece = self.model.grid[row][col]
 
         if self.selected_pos is None:
+            # 기물 선택
             if piece != '.' and self._is_my_turn(piece):
                 self.selected_pos = (row, col)
+                # 엔진에서 legal moves 가져오기
+                if self.engine and self.engine.is_ready:
+                    self.legal_moves = self.engine.get_legal_moves(self.current_fen)
+                else:
+                    self.legal_moves = set()
                 self._refresh_ui()
         else:
             prev_row, prev_col = self.selected_pos
+
             if (prev_row, prev_col) == (row, col):
+                # 같은 자리 클릭 → 선택 취소
                 self.selected_pos = None
+                self.legal_moves = set()
             else:
                 move_uci = self._coords_to_uci(prev_row, prev_col, row, col)
-                self.execute_move(move_uci, prev_row, prev_col, row, col)
-                if self.current_mode == 'analysis':
-                    self._run_analysis_cycle()
-            self.selected_pos = None
+
+                if not self.legal_moves or move_uci in self.legal_moves:
+                    # 합법적인 수 → 이동 실행
+                    self.execute_move(move_uci, prev_row, prev_col, row, col)
+                    if self.current_mode == 'analysis':
+                        self._run_analysis_cycle()
+                else:
+                    # 불법 이동 → 선택 취소
+                    print(f'Invalid move: {move_uci}')
+
+                self.selected_pos = None
+                self.legal_moves = set()
             self._refresh_ui()
 
     def execute_move(self, move_uci, r1, c1, r2, c2):

@@ -75,6 +75,31 @@ class JanggiEngine:
                 self.process.kill()
                 self.process = None
 
+    def get_legal_moves(self, fen):
+        """
+        현재 FEN에서 합법적인 수 목록을 반환합니다.
+        :return: UCI 수 문자열 집합 (ex: {'a1a2', 'a4b4', ...})
+        """
+        if not self.is_ready:
+            return set()
+        self._send(f"position fen {fen}")
+        self._send("go perft 1")
+
+        legal_moves = set()
+        import re
+        while True:
+            if not self.process:
+                break
+            line = self.process.stdout.readline().strip()
+            if not line:
+                continue
+            if line.startswith("Nodes searched"):
+                break
+            m = re.match(r'^([a-i]\d+[a-i]\d+):\s*\d+$', line)
+            if m:
+                legal_moves.add(m.group(1))
+        return legal_moves
+
     def analyze_position(self, fen, moves, callback):
         """
         분석 요청. 결과는 큐를 통해 메인 스레드로 전달됩니다.
