@@ -362,6 +362,21 @@ class GameManager:
     # ------------------------------------------------------------------
     # 유틸리티
     # ------------------------------------------------------------------
+    def calculate_scores(self):
+        """현재 보드의 초/한 기물 점수를 합산하여 반환합니다."""
+        cho, han = 0, 0
+        for r in range(self.cfg.ROWS):
+            for c in range(self.cfg.COLS):
+                piece = self.model.grid[r][c]
+                if piece == '.':
+                    continue
+                score = self.cfg.PIECE_DATA.get(piece, {}).get('score', 0)
+                if piece.isupper():
+                    cho += score
+                else:
+                    han += score
+        return cho, han
+
     def _is_my_turn(self, piece):
         if self.current_turn == 'w' and piece.isupper(): return True
         if self.current_turn == 'b' and piece.islower(): return True

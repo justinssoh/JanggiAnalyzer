@@ -194,7 +194,9 @@ class JanggiApp:
         self.canvas.focus_set()
         self.canvas.event_generate("<FocusIn>")
         
-        # 3. 사이드 패널의 기보창이나 상태 갱신
+        # 3. 사이드 패널 갱신
+        cho, han = self.game_manager.calculate_scores()
+        self.side_panel.update_scores(cho, han)
         self.side_panel.update_status(
             turn=self.game_manager.current_turn,
             history=self.game_manager.move_history,
