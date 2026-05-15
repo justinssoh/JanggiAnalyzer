@@ -4,7 +4,6 @@ import tkinter as tk
 import os
 import sys
 
-# 프로젝트 루트를 Python Path에 추가
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir)
@@ -20,7 +19,6 @@ def main():
     root = tk.Tk()
     model = JanggiBoardModel()
 
-    # 엔진 초기화 (경로/OS 판별은 config.py에서 처리)
     engine = None
     if not os.path.exists(config.ENGINE_PATH):
         print(f"!!! 경고: 엔진 파일을 찾을 수 없습니다 !!!\n경로: {config.ENGINE_PATH}")
