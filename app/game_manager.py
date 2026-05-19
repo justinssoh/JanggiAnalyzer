@@ -26,9 +26,6 @@ class GameManager:
         self.is_flipped = False  # 초가 위쪽이면 True
 
         self.current_mode = 'idle'
-        self.engine_process = None
-        self.engine_analysis_thread = None
-        self.engine_game_thread = None
         self.legal_moves = set()
 
         print('GameManager: 게임이 초기화되었습니다.')
@@ -426,7 +423,7 @@ class GameManager:
             self.start_analysis_mode()
 
     # ------------------------------------------------------------------
-    # 유틸리티
+    # 승패 조건 확인 및 선언
     # ------------------------------------------------------------------
     def _check_game_over(self):
         """승패 조건을 확인하고 판정 결과를 반환합니다.
@@ -472,6 +469,9 @@ class GameManager:
         else:
             self.declare_game_over('초 승리', '한 기권')
 
+    # ------------------------------------------------------------------
+    # 유틸리티
+    # ------------------------------------------------------------------
     def calculate_scores(self):
         """현재 보드의 초/한 기물 점수를 합산하여 반환합니다."""
         cho, han = 0, 0

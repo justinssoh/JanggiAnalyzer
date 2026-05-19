@@ -362,7 +362,7 @@ class FENSetter:
         return f"{cho}/{mid}/{han} w - - 0 1"
 
     @staticmethod
-    def get_initial_fen_han_view(han_key, cho_key):
+    def get_initial_fen_han_player(han_key, cho_key):
         """한나라 플레이어 관점 - 한이 아래쪽에 보임 (선수는 항상 초)"""
         han = FENSetter.FORMATIONS['han'].get(han_key, 'rbna1abnr')
         cho = FENSetter.FORMATIONS['cho'].get(cho_key, 'RBNA1ABNR')

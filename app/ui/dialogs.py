@@ -114,7 +114,7 @@ class NewGameDialog(tk.Toplevel):
         
         if tab_index == 0:
             # 탭 1: 초나라(선수) - 초가 아래쪽에 보임
-            new_fen = FENSetter.get_initial_fen_han_view(
+            new_fen = FENSetter.get_initial_fen_han_player(
                 self.selected_han.get(),
                 self.selected_cho.get()
             )
